@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Class Register</title>
+<style>
+:root{--navy:#0b2a5b;--gold:#d9a526;--ivory:#fbf7ec;--line:#e3dcc8;--ink:#1b2430;--muted:#66707d}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial}
+body{background:var(--ivory);color:var(--ink);padding:15px;min-height:100vh}
+.card{background:white;border:1px solid var(--line);border-radius:20px;padding:25px;box-shadow:0 10px 30px rgba(11,42,91,.12)}
+.header{display:flex;align-items:center;gap:10px;margin-bottom:20px;padding-bottom:12px;border-bottom:3px solid var(--gold)}
+.header h2{color:var(--navy);font-size:22px}
+.info-grid{display:grid;gap:15px}
+.info-item{background:var(--ivory);padding:15px;border-radius:12px;border-left:4px solid var(--gold)}
+.info-item label{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase}
+.info-item p{font-size:18px;color:var(--navy);font-weight:bold;margin-top:5px}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body>
+<div class="card">
+    <div class="header"><h2>🏫 My Class Register</h2></div>
+    <div id="classInfo">Loading...</div>
+</div>
+<script>
+const db = supabase.createClient('https://iokjzbiludjthrqrehxp.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlva2p6YmlsdWRqdGhycXJlaHhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ1OTA0NzIsImV4cCI6MjExMDE2NjQ3Mn0.CFuJS7TGjtt2U_UESu3j9vzpdm6jAKadabFsYUUc8gw')
+const tCode = localStorage.getItem('teacherCode');
+const teacherName = localStorage.getItem('teacherName');
+
+async function load(){
+    if(!tCode) return document.getElementById('classInfo').innerText = 'Please login first';
+    let {data: teacher} = await db.from('teachers').select('*').eq('teacher_code', tCode).maybeSingle();
+    let teacherId = teacher ? teacher.id : null;
+    let {data: myClass} = await db.from('class_registers').select('*').eq('teacher_id', teacherId).maybeSingle();
+    if(!myClass && tCode){ let r = await db.from('class_registers').select('*').eq('teacher_code', tCode).maybeSingle(); myClass = r.data; }
+    if(!myClass && teacherName){ let r = await db.from('class_registers').select('*').eq('teacher_name', teacherName).maybeSingle(); myClass = r.data; }
+    if(!myClass) return document.getElementById('classInfo').innerText = 'No class assigned to you as Class Teacher';
+    
+    let {count: totalStudents} = await db.from('students').select('*', {count:'exact', head:true}).eq('class_id', myClass.class_id);
+    
+    document.getElementById('classInfo').innerHTML = `
+        <div class="info-grid">
+            <div class="info-item"><label>Class Teacher Name</label><p>${teacherName||myClass.teacher_name}</p></div>
+            <div class="info-item"><label>Class</label><p>${myClass.class_name}</p></div>
+            <div class="info-item"><label>Total Students</label><p>${totalStudents}</p></div>
+            <div class="info-item"><label>Role</label><p>Form Master</p></div>
+        </div>
+    `;
+}
+load();
+</script></body></html>

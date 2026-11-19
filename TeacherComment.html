@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Form Master's Comments - My Class Only - UMMUL QURA'AN</title>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:wght@500;700&family=Public+Sans:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#fbf7ec;--card:#fff;--ink:#1b2430;--mute:#66707d;--line:#e3dcc8;--green:#0b2a5b;--green-d:#071c3f;--gold:#d9a526;--soft:#eef1f8;--field:#fbf7ec;--err:#b3261e;box-sizing:border-box}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Public Sans",system-ui,sans-serif}
+header{background:var(--green);color:#fff;border-bottom:4px solid var(--gold);padding:28px 16px 64px}
+.hd{max-width:960px;margin:0 auto;display:flex;align-items:center;gap:14px}
+.crest{width:48px;height:48px;border-radius:50%;background:var(--gold);color:var(--green-d);display:grid;place-items:center;font:700 22px "Newsreader",Georgia,serif;flex:none}
+.school{font-size:14px;letter-spacing:.04em;opacity:.85;margin:0}
+h1{font:700 30px/1.15 "Newsreader",Georgia,serif;margin:2px 0 0}
+main{max-width:960px;margin:-44px auto 0;padding:0 16px 56px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:18px;box-shadow:0 6px 18px rgba(11,42,91,.08)}
+.ph{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+h2{font:700 21px "Newsreader",Georgia,serif;margin:0;color:var(--green-d)}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+label{display:block;font-size:13px;font-weight:600;color:var(--mute);margin-bottom:5px}
+select,input,textarea{width:100%;font:inherit;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:8px;padding:11px 12px}
+select:focus,input:focus,textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(217,165,38,.3);background:#fff}
+.actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+button{font:600 16px "Public Sans",sans-serif;border-radius:8px;padding:12px 26px;cursor:pointer;border:1.5px solid var(--green)}
+.load{background:#fff;color:var(--green)}
+.save{background:#2f6b3a;color:#fff;border-color:#2f6b3a}
+.chip{background:var(--soft);color:var(--green-d);font-size:13px;font-weight:600;border-radius:99px;padding:4px 12px}
+.wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:10px}
+.wrap::-webkit-scrollbar{height:8px}
+.wrap::-webkit-scrollbar-thumb{background:var(--green);border-radius:99px}
+table{width:100%;border-collapse:collapse;min-width:760px}
+th{text-align:left;font-size:13px;font-weight:600;color:var(--mute);background:var(--soft);padding:12px 8px;white-space:nowrap;position:sticky;top:0}
+td{padding:12px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td.sn{width:50px;color:var(--mute);text-align:center;font-weight:700}
+td.nm{width:200px;font-weight:600}
+.who{display:flex;align-items:center;gap:10px}
+.av{width:34px;height:34px;border-radius:50%;background:var(--soft);color:var(--green-d);display:grid;place-items:center;font-size:13px;font-weight:700;flex:none}
+td.cm{width:320px;min-width:280px}
+td.dp{width:110px;min-width:100px}
+textarea{width:100%;min-height:72px;resize:vertical}
+.pct{display:block;font-size:12px;color:var(--mute);margin-top:4px}
+.empty{color:var(--mute);text-align:center;padding:36px 8px}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 20px;border-radius:99px;font-size:15px;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+.bad{border-color:var(--err)!important;background:#fdecea!important}
+.no-class{color:#b3261e;text-align:center;font-weight:700;margin:20px 0}
+.slide-hint{font-size:11px;color:var(--mute);text-align:right;margin-bottom:6px}
+.slide-hint::after{content:" → Swipe to see more"}
+</style>
+</head>
+<body>
+<header>
+  <div class="hd">
+    <div class="crest">U</div>
+    <div><p class="school">STANDARD UMMUL QURA'AN ACADEMY, SOKOTO</p><h1>Form Master's Comments</h1></div>
+  </div>
+</header>
+<main>
+<section class="panel">
+  <div class="ph"><h2 id="classTitle">My Assigned Class</h2><span class="chip" id="countTop">Loading...</span></div>
+  <div id="noClassMsg"></div>
+  <div class="grid">
+    <div><label>Session</label><select id="ses"><option value="">Select Session</option></select></div>
+    <div><label>Term</label><select id="trm"><option value="">Select Term</option></select></div>
+  </div>
+  <div class="actions">
+    <button class="load" id="load">Load My Students</button>
+    <button class="save" id="save">Save</button>
+  </div>
+  <select id="cls" style="display:none"></select>
+</section>
+
+<section class="panel">
+  <div class="ph"><h2>Term details</h2></div>
+  <div class="grid">
+    <div><label>Total days opened</label><input id="open" type="number" min="0"></div>
+    <div><label>Began on</label><input id="began" type="text" placeholder="e.g. 14th Sept 2026"></div>
+    <div><label>Ended on</label><input id="ended" type="text" placeholder="e.g. 18th Dec"></div>
+    <div><label>Next term begins</label><input id="next" type="text" placeholder="e.g. 11th Jan 2027"></div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="ph"><h2 id="tt">My Students</h2><span class="chip" id="count">0 students</span></div>
+  <div class="slide-hint">Slide table</div>
+  <div class="wrap">
+    <table>
+      <thead><tr><th>S/N</th><th>Student name</th><th>Form Master's comment</th><th>Days present</th></tr></thead>
+      <tbody id="rows"><tr><td colspan="4" class="empty">Press Load - slide left/right</td></tr></tbody>
+    </table>
+  </div>
+</section>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+const SUPABASE_URL="https://iokjzbiludjthrqrehxp.supabase.co";
+const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlva2p6YmlsdWRqdGhycXJlaHhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ1OTA0NzIsImV4cCI6MjExMDE2NjQ3Mn0.CFuJS7TGjtt2U_UESu3j9vzpdm6jAKadabFsYUUc8gw";
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+var $=id=>document.getElementById(id);
+function toast(m){var t=$("toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500)}
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;")}
+function initials(n){return String(n||"?").trim().split(/\s+/).slice(0,2).map(w=>w[0]).join("").toUpperCase()}
+async function loadTeacherRegister(){
+  const teacherCode=localStorage.getItem('teacherCode');
+  const teacherId=localStorage.getItem('teacherId');
+  if(!teacherCode&&!teacherId){
+    $("cls").innerHTML=`<option>Please Login First</option>`;
+    document.getElementById("noClassMsg").innerHTML=`<div class="no-class">Please login from Teacher Dashboard first</div>`;
+    return;
+  }
+  const {data:registers}=await db.from("class_registers").select("class_id, class_name").or(`teacher_id.eq.${teacherId},teacher_code.eq.${teacherCode}`);
+  if(!registers||!registers.length){
+    $("cls").innerHTML=`<option>No Class Assigned</option>`;
+    document.getElementById("noClassMsg").innerHTML=`<div class="no-class">No Class Register Assigned to you. Contact Admin</div>`;
+    return;
+  }
+  $("cls").innerHTML=registers.map(c=>`<option value="${c.class_id}">${c.class_name}</option>`).join("");
+  document.getElementById("classTitle").textContent=`My Class: ${registers[0].class_name}`;
+  document.getElementById("countTop").textContent=registers[0].class_name;
+  if(registers.length===1) $("cls").value=registers[0].class_id;
+  const {data:sessions}=await db.from("sessions").select("*").order("id");
+  $("ses").innerHTML=`<option value="">Select Session</option>`+(sessions||[]).map(s=>`<option value="${s.id}">${s.session_name}</option>`).join("");
+  const {data:terms}=await db.from("terms").select("*").order("id");
+  $("trm").innerHTML=`<option value="">Select Term</option>`+(terms||[]).map(t=>`<option value="${t.id}">${t.term_name}</option>`).join("");
+}
+loadTeacherRegister();
+function updatePct(){
+  const total=parseInt($("open").value)||0;
+  document.querySelectorAll("#rows tr").forEach(r=>{
+    const p=parseInt(r.querySelector("input")?.value);
+    const el=r.querySelector(".pct");
+    if(el) el.textContent=(total&&!isNaN(p))?Math.round(p/total*100)+"%":"";
+  });
+}
+$("open").addEventListener("input",updatePct);
+$("rows").addEventListener("input",e=>{if(e.target.matches("input")){e.target.classList.remove("bad");updatePct()}});
+$("load").onclick=async()=>{
+  const classId=$("cls").value, sessionId=$("ses").value, termId=$("trm").value;
+  if(!classId||!sessionId||!termId){toast("Select session and term");return;}
+  toast("Loading...");
+  const {data:students}=await db.from("students").select("*").eq("class_id",classId).order("student_name");
+  const {data:comments}=await db.from("form_comments").select("*").eq("class_id",classId).eq("session_id",sessionId).eq("term_id",termId);
+  const map={}; comments?.forEach(c=>map[c.student_id]=c);
+  if(comments&&comments[0]){
+    $("open").value=comments[0].total_days_opened||"";
+    $("began").value=comments[0].term_began||"";
+    $("ended").value=comments[0].term_ended||"";
+    $("next").value=comments[0].next_term_begins||"";
+  }
+  $("tt").textContent=$("cls").options[$("cls").selectedIndex].text+" - My Students";
+  $("count").textContent=students.length+" students";
+  $("countTop").textContent=students.length+" students";
+  $("rows").innerHTML=students.map((s,i)=>{
+    const c=map[s.id]||{};
+    return `<tr data-student-id="${s.id}"><td class="sn">${i+1}</td><td class="nm"><div class="who"><span class="av">${esc(initials(s.student_name))}</span><span>${esc(s.student_name)}</span></div></td><td class="cm"><textarea>${esc(c.form_master_comment||"")}</textarea></td><td class="dp"><input type="number" min="0" value="${c.days_present||""}"><span class="pct"></span></td></tr>`;
+  }).join("");
+  updatePct();
+};
+$("save").onclick=async()=>{
+  const classId=$("cls").value, sessionId=$("ses").value, termId=$("trm").value;
+  const rows=document.querySelectorAll("#rows tr[data-student-id]");
+  if(!rows.length){toast("Load first");return;}
+  if(!classId||!sessionId||!termId){toast("Select session and term");return;}
+  const totalOpened=parseInt($("open").value)||0;
+  let payload=[], bad=false;
+  rows.forEach(r=>{
+    const input=r.querySelector("input");
+    const present=parseInt(input.value)||0;
+    input.classList.remove("bad");
+    if(totalOpened&&present>totalOpened){input.classList.add("bad");bad=true;}
+    payload.push({class_id:classId,session_id:sessionId,term_id:termId,student_id:r.dataset.studentId,form_master_comment:r.querySelector("textarea").value,days_present:present,total_days_opened:totalOpened,term_began:$("began").value,term_ended:$("ended").value,next_term_begins:$("next").value,updated_at:new Date().toISOString()});
+  });
+  if(bad){toast("Days present cannot exceed total opened");return;}
+  const {error}=await db.from("form_comments").upsert(payload,{onConflict:'class_id,session_id,term_id,student_id'});
+  if(error){toast(error.message);return;}
+  toast("Saved successfully");
+};
+</script>
+</body>
+</html>

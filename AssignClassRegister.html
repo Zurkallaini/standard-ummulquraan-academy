@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assign Class Register</title>
+<style>
+:root{--navy:#0b2a5b;--navy-deep:#071c3f;--gold:#d9a526;--green:#2f6b3a;--red:#9b1c1c;--ivory:#fbf7ec;--line:#e3dcc8;--ink:#1b2430}
+/* ADDED THIS LINE - makes page grow */
+html, body, .card { height:auto !important; overflow:visible !important; }
+
+body{background:var(--ivory);color:var(--ink);padding:15px;font-family:Arial}
+.card{background:white;border:1px solid var(--line);border-radius:15px;padding:20px}
+h2{color:var(--navy);padding-bottom:10px;border-bottom:3px solid var(--gold);margin-bottom:10px}
+h3{color:var(--navy)}
+label{font-weight:600;font-size:14px}
+input,select{width:100%;padding:12px;margin:8px 0;border:1.5px solid var(--line);border-radius:8px;background:var(--ivory);color:var(--ink)}
+input:focus,select:focus{outline:none;border-color:var(--gold)}
+.btn{background:var(--navy);color:white;padding:12px;border:none;border-bottom:4px solid var(--gold);border-radius:8px;width:100%;font-weight:bold;cursor:pointer}
+.btn:hover{background:var(--navy-deep)}
+
+/* NEW: MAKE TABLE SLIDE ON MOBILE */
+.table-wrapper{ overflow-x: auto; margin-top:15px; border-radius:10px; overflow-y:visible; max-height:none; border:1px solid var(--line) }
+table{width:100%;border-collapse:collapse; min-width: 500px; }
+th{background:var(--navy);color:white;padding:10px;text-align:left; white-space: nowrap;}
+td{padding:10px;border-bottom:1px solid var(--line); white-space: nowrap;}
+tbody tr:nth-child(even){background:var(--ivory)}
+.btn-del{background:var(--red);padding:6px 12px;border:none;border-radius:5px;color:white;cursor:pointer; font-weight:600}
+.btn-del:hover{background:#7a1616}
+#msg{padding:10px;border-radius:8px;margin:10px 0;display:none;text-align:center;font-weight:bold}
+.msg-success{background:#d9efdc;color:#1f5a2c}
+.msg-error{background:#fee2e2;color:#991b1b}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div class="card">
+    <h2>Assign Class Register Teacher</h2>
+    <div id="msg"></div>
+    <label>Select Class</label>
+    <select id="rClass"></select>
+    <label>Select Teacher</label>
+    <select id="rTeacher"></select>
+    <button class="btn" onclick="saveRegister()">Save Class Register</button>
+
+    <h3 style="margin-top:20px">Current Class Registers</h3>
+    
+    <!-- WRAP TABLE WITH THIS DIV -->
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>S/N</th><th>CLASS</th><th>REGISTER TEACHER</th><th>ACTION</th></tr></thead>
+            <tbody id="registerTable"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+const db = supabase.createClient('https://iokjzbiludjthrqrehxp.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlva2p6YmlsdWRqdGhycXJlaHhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ1OTA0NzIsImV4cCI6MjExMDE2NjQ3Mn0.CFuJS7TGjtt2U_UESu3j9vzpdm6jAKadabFsYUUc8gw')
+let classesData=[], teachersData=[];
+
+async function load(){
+    classesData = (await db.from('classes').select('*')).data||[];
+    teachersData = (await db.from('teachers').select('*')).data||[];
+    document.getElementById('rClass').innerHTML = '<option value="">Select Class</option>' + classesData.map(c=>`<option value="${c.id}">${c.class_name}</option>`).join('');
+    document.getElementById('rTeacher').innerHTML = '<option value="">Select Teacher</option>' + teachersData.map(t=>`<option value="${t.id}">${t.teacher_name}</option>`).join('');
+    loadTable();
+    
+    /* ADDED THIS LINE - tells parent iframe to resize */
+    if(window.parent) window.parent.postMessage('resize','*');
+}
+async function loadTable(){
+    let {data} = await db.from('class_registers').select('*').order('id', {ascending: false});
+    document.getElementById('registerTable').innerHTML = (data||[]).map((r,i)=>`
+        <tr>
+            <td>${i+1}</td>
+            <td>${r.class_name}</td>
+            <td>${r.teacher_name}</td>
+            <td><button class="btn-del" onclick="del(${r.id})">Delete</button></td>
+        </tr>
+    `).join('') || '<tr><td colspan="4" style="text-align:center">No register assigned yet</td></tr>';
+    
+    /* ADDED THIS LINE - resize after table loads */
+    if(window.parent) window.parent.postMessage('resize','*');
+}
+async function saveRegister(){
+    const class_id = document.getElementById('rClass').value;
+    const teacher_id = document.getElementById('rTeacher').value;
+    if(!class_id||!teacher_id) return showMsg('Select both class and teacher','error');
+    
+    const class_name = classesData.find(c=>c.id==class_id)?.class_name;
+    const teacher = teachersData.find(t=>t.id==teacher_id);
+    const teacher_name = teacher?.teacher_name;
+    const teacher_code = teacher?.teacher_code || null;
+    
+    let {data:check} = await db.from('class_registers').select('id').eq('class_id',class_id).maybeSingle();
+    if(check) return showMsg('This class already has a register teacher','error');
+
+    const {error} = await db.from('class_registers').insert([{class_id,class_name,teacher_id,teacher_name,teacher_code}]);
+    if(error) return showMsg(error.message,'error');
+    showMsg('Assigned Successfully','success'); 
+    document.getElementById('rClass').value = '';
+    document.getElementById('rTeacher').value = '';
+    loadTable();
+}
+async function del(id){ 
+    if(confirm('Delete this register assignment?')){
+        await db.from('class_registers').delete().eq('id',id); 
+        showMsg('Deleted Successfully','success');
+        loadTable(); 
+    }
+}
+function showMsg(t,ty){ 
+    const m=document.getElementById('msg'); 
+    m.innerText=t; 
+    m.className=ty=='success'?'msg-success':'msg-error'; 
+    m.style.display='block'; 
+    setTimeout(()=>m.style.display='none',2500);
+}
+load();
+</script>
+</body>
+</html>

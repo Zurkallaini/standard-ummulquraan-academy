@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teacher Code - Standard Ummul Qura'an Academy, Sokoto</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+    :root{
+        --navy:#0b2a5b; --navy-deep:#071c3f; --navy-hi:#143a78; --navy-lo:#041433;
+        --gold:#d9a526;
+        --soft:#ece8dc; --soft-hi:#ffffff; --soft-lo:#c9c3b0;
+        --ink:#1b2430; --muted:#66707d;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background: var(--soft); color: var(--ink); min-height: 100vh; }
+    .page { display: grid; grid-template-columns: 1fr; min-height: 100vh; }
+
+    /* Colour block 1: navy */
+    .brand { background: var(--navy); color: #fff; text-align: center; padding: 40px 28px 100px; border-bottom: 6px solid var(--gold); }
+    .logo-box { width: 128px; height: 128px; margin: 0 auto 22px; padding: 10px; border-radius: 50%; background: var(--navy);
+        box-shadow: 8px 8px 18px var(--navy-lo), -8px -8px 18px var(--navy-hi); }
+    .logo-in { width: 100%; height: 100%; border-radius: 50%; background: #fff; overflow: hidden; display: flex; align-items: center; justify-content: center;
+        box-shadow: inset 3px 3px 7px rgba(0,0,0,.18), inset -3px -3px 7px rgba(255,255,255,.9); }
+    .logo-in img { width: 100%; height: 100%; object-fit: contain; }
+    .school-name { font-size: 13px; font-weight: 700; letter-spacing: .5px; color: #c9d6ee; }
+    .brand h1 { font-size: 26px; font-weight: 700; margin-top: 10px; }
+
+    /* Colour block 2: ivory */
+    .panel { background: var(--soft); padding: 0 20px 40px; }
+    .neumorph-card { max-width: 430px; margin: -64px auto 0; padding: 32px 26px; border-radius: 26px; background: var(--soft);
+        box-shadow: 10px 10px 22px var(--soft-lo), -10px -10px 22px var(--soft-hi);
+        opacity: 0; transform: translateY(24px); animation: cardIn .7s ease forwards; }
+    @keyframes cardIn { to { opacity: 1; transform: translateY(0); } }
+    label { display: block; font-size: 13px; color: var(--ink); margin-bottom: 10px; font-weight: 600; }
+    .form-group { margin-bottom: 22px; }
+    input[type="text"] { width: 100%; padding: 15px 18px; border: none; border-radius: 16px; font-size: 15px; background: var(--soft); color: var(--ink);
+        box-shadow: inset 5px 5px 10px var(--soft-lo), inset -5px -5px 10px var(--soft-hi); outline: none; text-transform: uppercase; letter-spacing: 1px; }
+    input[type="text"]:focus { outline: 2px solid var(--gold); outline-offset: 2px; }
+    input::placeholder { color: #9a9686; text-transform: none; letter-spacing: normal; }
+    .btn-neo { width: 100%; padding: 16px; background: var(--navy); color: #fff; border: none; border-bottom: 4px solid var(--gold); border-radius: 16px;
+        font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 6px 6px 14px var(--soft-lo), -6px -6px 14px var(--soft-hi); transition: transform .2s ease; }
+    .btn-neo:hover { background: var(--navy-deep); }
+    .btn-neo:active { box-shadow: inset 4px 4px 9px var(--navy-lo), inset -3px -3px 7px var(--navy-hi); }
+    .btn-neo:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+    .error { color: #9b1c1c; font-size: 13px; margin-top: 14px; text-align: center; display: none; font-weight: 600; }
+    .footer { text-align: center; margin-top: 22px; font-size: 12px; color: var(--muted); }
+    @media (prefers-reduced-motion: reduce) { .neumorph-card { animation: none; opacity: 1; transform: none; } }
+
+    /* Desktop: left/right split */
+    @media (min-width: 860px) {
+        .page { grid-template-columns: 1fr 1fr; }
+        .brand { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 60px; border-bottom: 0; border-right: 8px solid var(--gold); }
+        .logo-box { width: 180px; height: 180px; padding: 14px; }
+        .brand h1 { font-size: 34px; }
+        .panel { display: flex; align-items: center; padding: 40px; }
+        .neumorph-card { margin: 0 auto; width: 100%; }
+    }
+</style>
+</head>
+<body>
+<div class="page">
+    <section class="brand">
+        <div class="logo-box"><div class="logo-in"><img src="mine-logo.png" alt=""></div></div>
+        <div class="school-name">STANDARD UMMUL QURA'AN ACADEMY, SOKOTO</div>
+        <h1>TEACHER CODE</h1>
+    </section>
+
+    <section class="panel">
+        <div class="neumorph-card">
+            <form id="codeForm">
+                <div class="form-group">
+                    <label for="teacherCode"><center>Enter Teacher Code</center></label>
+                    <input type="text" id="teacherCode" placeholder="e.g UMM-T001" required>
+                </div>
+
+                <button type="submit" class="btn-neo">Continue</button>
+                <p class="error" id="errorMsg">Invalid Teacher Code</p>
+            </form>
+
+            <div class="footer">© STANDARD UMMUL QURA'AN ACADEMY, SOKOTO ©</div>
+        </div>
+    </section>
+</div>
+
+<script>
+// UMMUL PROJECT - SAME AS LOGIN & ADMIN
+const SUPABASE_URL = 'https://iokjzbiludjthrqrehxp.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlva2p6YmlsdWRqdGhycXJlaHhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ1OTA0NzIsImV4cCI6MjExMDE2NjQ3Mn0.CFuJS7TGjtt2U_UESu3j9vzpdm6jAKadabFsYUUc8gw';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Fallback if SQL not run yet
+const FALLBACK_MASTER_CODE = "ZUKS2005";
+
+document.getElementById('codeForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const code = document.getElementById('teacherCode').value.trim().toUpperCase();
+    const errorMsg = document.getElementById('errorMsg');
+    errorMsg.style.display = 'none';
+    document.querySelector('.btn-neo').style.transform = 'scale(0.98)';
+    setTimeout(() => { document.querySelector('.btn-neo').style.transform = ''; }, 150);
+    if(code === '') {
+        errorMsg.innerText = 'Please enter teacher code';
+        errorMsg.style.display = 'block';
+        return;
+    }
+
+    // 1. GET MASTER CODE FROM SQL (app_settings)
+    let MASTER_CODE = FALLBACK_MASTER_CODE;
+    try{
+        const {data: settings} = await db.from('app_settings').select('super_admin_code').eq('id',1).single();
+        if(settings && settings.super_admin_code) MASTER_CODE = settings.super_admin_code.toUpperCase();
+    }catch(err){}
+
+    // 2. CHECK IF IT'S SUPER ADMIN MASTER CODE FIRST
+    if(code === MASTER_CODE){
+        localStorage.setItem('isSuper', 'true');
+        localStorage.setItem('userRole', 'Teacher');
+        localStorage.setItem('teacherCode', 'SUPERADMIN');
+        localStorage.setItem('teacherName', 'Super Admin');
+        localStorage.setItem('teacherId', '0');
+        window.location.href = 'TeacherDashboard.html';
+        return;
+    }
+
+    // 3. CHECK NORMAL TEACHER IN DB
+    const { data, error } = await db.from('teachers')
+        .select('*')
+        .eq('teacher_code', code)
+        .single();
+
+    if(error || !data){
+        errorMsg.innerText = 'Invalid Teacher Code';
+        errorMsg.style.display = 'block';
+        return;
+    }
+
+    // 4. SAVE NORMAL TEACHER INFO AND GO TO DASHBOARD
+    localStorage.setItem('isSuper', 'false');
+    localStorage.setItem('userRole', 'Teacher');
+    localStorage.setItem('teacherCode', data.teacher_code);
+    localStorage.setItem('teacherName', data.teacher_name);
+    localStorage.setItem('teacherId', data.id);
+    localStorage.setItem('teacherClass', data.class_name || '');
+    
+    window.location.href = 'TeacherDashboard.html';
+});
+</script>
+</body>
+</html>

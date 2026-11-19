@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mark Sheet - Standard Ummul Qura'an Academy, Sokoto</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --navy:#0b2a5b; --navy-deep:#071c3f; --gold:#d9a526; --green:#2f6b3a;
+  --ivory:#fbf7ec; --line:#e3dcc8; --ink:#1b2430;
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
+body{background:var(--ivory);color:var(--ink);padding:10px}
+.box{background:#fff;border:1px solid var(--line);border-radius:12px;padding:15px}
+h2.screen-title{background:var(--navy);color:#fff;text-align:center;padding:12px;border-radius:8px;border-bottom:4px solid var(--gold);margin-bottom:15px;font-size:18px}
+.filter-bar{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:15px}
+@media(max-width:700px){.filter-bar{grid-template-columns:1fr}}
+select,button{padding:12px;border-radius:8px;border:1.5px solid var(--line);width:100%;font-size:14px;margin-bottom:10px}
+select{background:var(--ivory);color:var(--ink)}
+select:focus,input:focus{outline:none;border:2px solid var(--gold)}
+.btn-green{background:var(--green);color:#fff;font-weight:bold;border:none;cursor:pointer}
+.btn-blue{background:var(--navy);color:#fff;font-weight:bold;border:none;border-bottom:4px solid var(--gold);cursor:pointer}
+.btn-blue:hover{background:var(--navy-deep)}
+.table-wrapper{overflow-x:auto;margin-top:15px;width:100%}
+table{width:100%;border-collapse:collapse;font-size:11px;min-width:700px}
+th{background:var(--navy);color:#fff;padding:8px;text-align:center}
+td{padding:6px;border:1px solid var(--line);text-align:center}
+tbody tr:nth-child(even){background:var(--ivory)}
+input{width:55px;text-align:center;border:1px solid #ccc;border-radius:4px;padding:4px}
+input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+sup{font-size:9px;vertical-align:super}
+.alert{padding:10px;border-radius:8px;margin:10px 0;display:none;text-align:center}
+.alert.success{background:#d9efdc;color:#1f5a2c}
+.alert.error{background:#fee2e2;color:#991b1b}
+#printHeader{display:none;text-align:center;margin-bottom:15px;padding-bottom:10px;border-bottom:2px solid #000}
+#printHeader h2{margin:0;background:none;color:#000;font-size:20px}
+#printHeader h3{margin:5px 0;color:#000;font-size:16px}
+#printHeader p{margin:5px 0;font-size:12px}
+@media print {
+    body{background:white;padding:0}
+   .filter-bar,.btn-green,.btn-blue{visibility:hidden;position:absolute;left:-9999px}
+   .box{border:none;padding:0}
+    h2.screen-title{display:none}
+   #printHeader{display:block!important}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    table, th, td {border: 1px solid #000;}
+    th{background:white;color:#000}
+    tbody tr:nth-child(even){background:white}
+    input{border:none;background:transparent}
+}
+</style>
+</head>
+<body>
+<div class="box">
+<h2 class="screen-title">MARK SHEET - UMMUL QURA'AN ACADEMY</h2>
+<div id="printHeader">
+    <h2 id="printSchoolName">STANDARD UMMUL QURA'AN ACADEMY, SOKOTO</h2>
+    <h3>MARK SHEET</h3>
+    <p><b>Class:</b> <span id="printClass"></span> | 
+       <b>Subject:</b> <span id="printSubject"></span> | 
+       <b>Session:</b> <span id="printSession"></span> | 
+       <b>Term:</b> <span id="printTerm"></span> |
+       <b>Teacher:</b> <span id="printTeacher"></span>
+    </p>
+</div>
+<div id="alert" class="alert"></div>
+<div class="filter-bar">
+<select id="markClass"><option>Select Class</option></select>
+<select id="markSubject"><option>Select Subject</option></select>
+<select id="markSession"><option>Select Session</option></select>
+<select id="markTerm"><option>Select Term</option></select>
+</div>
+<button class="btn-green" onclick="loadStudents()">Load Students</button>
+<button class="btn-green" onclick="saveAllMarks()">Save All Marks</button>
+<button class="btn-blue" onclick="printSheet()">Print</button>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>S/N</th>
+<th style="text-align:left">STUDENT NAME</th>
+<th>1ST C.A<br>(20)</th>
+<th>2ND C.A<br>(20)</th>
+<th>EXAM<br>(60)</th>
+<th>TOTAL<br>(100)</th>
+<th>GRADE</th>
+<th>POSITION</th>
+</tr>
+</thead>
+<tbody id="markTbl"><tr><td colspan="8">Select filters and click Load Students</td></tr></tbody>
+</table>
+</div>
+</div>
+<script>
+const db = supabase.createClient('https://iokjzbiludjthrqrehxp.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlva2p6YmlsdWRqdGhycXJlaHhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ1OTA0NzIsImV4cCI6MjExMDE2NjQ3Mn0.CFuJS7TGjtt2U_UESu3j9vzpdm6jAKadabFsYUUc8gw');
+const userRole = localStorage.getItem('userRole');
+const isSuper = localStorage.getItem('isSuper');
+const isAdmin = (userRole === 'Admin') || (localStorage.getItem('adminLogin') === 'true') || (isSuper === 'true');
+const tCode = localStorage.getItem('teacherCode');
+const tName = localStorage.getItem('teacherName');
+let teacherDB_ID = null;
+let currentResults = []; let sessionsList = []; let termsList = []; let subjectsList = [];
+function showAlert(msg,type='success'){const a=document.getElementById('alert');a.className=`alert ${type}`;a.innerText=msg;a.style.display='block';setTimeout(()=>a.style.display='none',2500)}
+function getGrade(total){
+    total = parseInt(total)||0; 
+    if(total>=70)return 'A';
+    if(total>=60)return 'B';
+    if(total>=50)return 'C';
+    if(total>=45)return 'D';
+    if(total>=40)return 'E';
+    return 'F';
+}
+function getPosition(rank){
+    if(rank===''||rank==null) return '';
+    let suffix = ['th','st','nd','rd'];
+    let v = rank % 100;
+    return rank + '<sup>' + (suffix[(v-20)%10] || suffix[v] || suffix[0]) + '</sup>';
+}
+async function init(){
+    if(!isAdmin && tCode){
+        let {data: teacher} = await db.from('teachers').select('id').eq('teacher_code', tCode).single();
+        if(teacher) teacherDB_ID = teacher.id;
+        document.getElementById('printTeacher').innerText = tName;
+    } else {
+        document.getElementById('printTeacher').innerText = tName || 'Admin / Super Admin';
+    }
+    let {data:sess} = await db.from('sessions').select('*');
+    let {data:term} = await db.from('terms').select('*');
+    let {data:subj} = await db.from('subjects').select('*');
+    sessionsList = sess || []; termsList = term || []; subjectsList = subj || [];
+    markSession.innerHTML = '<option>Select Session</option>' + sessionsList.map(s=>`<option value="${s.id}">${s.session_name}</option>`).join('');
+    markTerm.innerHTML = '<option>Select Term</option>' + termsList.map(t=>`<option value="${t.id}">${t.term_name}</option>`).join('');
+    if(isAdmin){ 
+        let {data:classes} = await db.from('classes').select('*').order('class_name');
+        markClass.innerHTML = '<option>Select Class</option>' + (classes||[]).map(c=>`<option value="${c.id}">${c.class_name}</option>`).join('');
+        markSubject.innerHTML = '<option>Select Subject</option>' + subjectsList.map(s=>`<option value="${s.id}">${s.subject_name}</option>`).join('');
+    }else{ 
+        let {data: assigned} = await db.from('teacher_subjects').select('*').eq('teacher_code', tCode);
+        if(!assigned || assigned.length==0){showAlert('No Class and Subject Assigned','error');return}
+        let myClasses = [...new Map(assigned.map(item => [item['class_id'], item])).values()];
+        markClass.innerHTML = '<option>Select Class</option>' + myClasses.map(c=>`<option value="${c.class_id}">${c.class_name}</option>`).join('');
+    }
+}
+markClass.onchange = async () => {
+    let cid = markClass.value;
+    if(!isAdmin){
+        let {data: assigned} = await db.from('teacher_subjects').select('*').eq('teacher_code', tCode).eq('class_id', cid);
+        markSubject.innerHTML = '<option>Select Subject</option>' + (assigned||[]).map(s=>`<option value="${s.subject_id}">${s.subject_name}</option>`).join('');
+    }
+}
+async function loadStudents(){
+    let cid=markClass.value,sid=markSubject.value,ss=markSession.value,tt=markTerm.value;
+    if(cid=='Select Class'||sid=='Select Subject'||ss=='Select Session'||tt=='Select Term') return showAlert('Select all filters','error');
+    showAlert('Loading...');
+    let {data:stu} = await db.from('students').select('*').eq('class_id',cid).order('student_name');
+    let {data:marks} = await db.from('results').select('*').eq('class_id',cid).eq('subject_id',sid).eq('session_id',ss).eq('term_id',tt);
+    document.getElementById('printClass').innerText = markClass.options[markClass.selectedIndex].text;
+    document.getElementById('printSubject').innerText = document.getElementById('markSubject').options[document.getElementById('markSubject').selectedIndex].text;
+    document.getElementById('printSession').innerText = sessionsList.find(s=>s.id==ss)?.session_name;
+    document.getElementById('printTerm').innerText = termsList.find(t=>t.id==tt)?.term_name;
+    // FIXED: No blank - Total = 0, Grade = F, Position calculated for ALL
+    currentResults = (stu||[]).map(s=>{
+        let m = (marks||[]).find(x=>x.student_id==s.id)||{};
+        let ca1 = m.ca1!==null && m.ca1!==undefined ? m.ca1 : '';
+        let ca2 = m.ca2!==null && m.ca2!==undefined ? m.ca2 : '';
+        let exam = m.exam!==null && m.exam!==undefined ? m.exam : '';
+        let total = (parseInt(ca1)||0)+(parseInt(ca2)||0)+(parseInt(exam)||0);
+        return {...s, ca1, ca2, exam, total, grade:getGrade(total), position:1};
+    });
+    calculatePositions();
+    renderTable();
+    showAlert('Loaded '+(stu||[]).length+' students');
+}
+// FIXED: Position for ALL students, tie = same position
+function calculatePositions(){
+    let sorted = [...currentResults].sort((a,b)=>(b.total||0)-(a.total||0));
+    let position = 1;
+    sorted.forEach((s,i)=>{
+        if(i > 0 && s.total === sorted[i-1].total){
+            s.position = sorted[i-1].position;
+        } else {
+            s.position = position;
+        }
+        position++;
+    });
+}
+function renderTable(){
+    let displayList = [...currentResults].sort((a,b)=>(b.total||0)-(a.total||0));
+    markTbl.innerHTML = displayList.map((s,i)=>`
+    <tr id="row_${s.id}">
+        <td class="sn">${i+1}</td>
+        <td style="text-align:left">${s.student_name}</td>
+        <td><input type="number" id="ca1_${s.id}" data-col="ca1" data-id="${s.id}" value="${s.ca1}" max="20" min="0" oninput="updateMark(${s.id})" onkeydown="handleKey(event)"></td>
+        <td><input type="number" id="ca2_${s.id}" data-col="ca2" data-id="${s.id}" value="${s.ca2}" max="20" min="0" oninput="updateMark(${s.id})" onkeydown="handleKey(event)"></td>
+        <td><input type="number" id="exam_${s.id}" data-col="exam" data-id="${s.id}" value="${s.exam}" max="60" min="0" oninput="updateMark(${s.id})" onkeydown="handleKey(event)"></td>
+        <td id="total_${s.id}">${s.total}</td>
+        <td id="grade_${s.id}">${getGrade(s.total)}</td>
+        <td id="pos_${s.id}">${getPosition(s.position)}</td>
+    </tr>`).join('');
+}
+function handleKey(e){
+    if(e.key === 'Enter'){
+        e.preventDefault();
+        let col = e.target.dataset.col;
+        let id = parseInt(e.target.dataset.id);
+        let displayList = [...currentResults].sort((a,b)=>(b.total||0)-(a.total||0));
+        let currentIndex = displayList.findIndex(s => s.id === id);
+        let nextStudent = displayList[currentIndex + 1];
+        if(nextStudent){
+            let nextInput = document.getElementById(`${col}_${nextStudent.id}`);
+            if(nextInput) nextInput.focus();
+        }
+    }
+}
+// FIXED: LIVE - Total, Grade, Position update for ALL as you type
+function updateMark(id){
+    let ca1Raw = document.getElementById(`ca1_${id}`).value;
+    let ca2Raw = document.getElementById(`ca2_${id}`).value;
+    let examRaw = document.getElementById(`exam_${id}`).value;
+    let ca1 = ca1Raw==='' ? '' : Math.min(20, Math.max(0, +ca1Raw||0));
+    let ca2 = ca2Raw==='' ? '' : Math.min(20, Math.max(0, +ca2Raw||0));
+    let exam = examRaw==='' ? '' : Math.min(60, Math.max(0, +examRaw||0));
+    if(ca1!=='' ) document.getElementById(`ca1_${id}`).value = ca1;
+    if(ca2!=='' ) document.getElementById(`ca2_${id}`).value = ca2;
+    if(exam!=='' ) document.getElementById(`exam_${id}`).value = exam;
+    let student = currentResults.find(s=>s.id==id);
+    student.ca1 = ca1; student.ca2 = ca2; student.exam = exam;
+    student.total = (parseInt(ca1)||0)+(parseInt(ca2)||0)+(parseInt(exam)||0);
+    document.getElementById(`total_${id}`).innerText = student.total;
+    document.getElementById(`grade_${id}`).innerText = getGrade(student.total);
+    calculatePositions();
+    currentResults.forEach(s=>{
+        let posCell = document.getElementById(`pos_${s.id}`);
+        if(posCell) posCell.innerHTML = getPosition(s.position);
+        let totalCell = document.getElementById(`total_${s.id}`);
+        if(totalCell) totalCell.innerText = s.total;
+        let gradeCell = document.getElementById(`grade_${s.id}`);
+        if(gradeCell) gradeCell.innerText = getGrade(s.total);
+    });
+}
+async function saveAllMarks(){
+    let cid=markClass.value,sid=markSubject.value,ss=markSession.value,tt=markTerm.value;
+    if(cid=='Select Class'||sid=='Select Subject'||ss=='Select Session'||tt=='Select Term') return showAlert('Select all filters','error');
+    let class_name = markClass.options[markClass.selectedIndex].text;
+    let session_name = sessionsList.find(s=>s.id==ss)?.session_name;
+    let term_name = termsList.find(t=>t.id==tt)?.term_name;
+    let subject_name = subjectsList.find(s=>s.id==sid)?.subject_name;
+    showAlert('Saving...');
+    let dataToSave = currentResults.map(s => ({
+        student_id:s.id, 
+        student_name:s.student_name, 
+        class_id:cid, 
+        class_name:class_name,
+        subject_id:sid, 
+        subject_name:subject_name,
+        session_id:ss, 
+        session_name:session_name, 
+        term_id:tt, 
+        term_name:term_name,
+        teacher_id: teacherDB_ID,
+        teacher_name: tName,
+        ca1:s.ca1==='' ? 0 : s.ca1, 
+        ca2:s.ca2==='' ? 0 : s.ca2, 
+        exam:s.exam==='' ? 0 : s.exam,
+        grade: getGrade(s.total), 
+        position: s.position, 
+        status: 'Approved'
+    }));
+    let {error} = await db.from('results').upsert(dataToSave, {onConflict: 'student_id,class_id,subject_id,session_id,term_id'});
+    if(error) showAlert('Error: '+error.message,'error');
+    else showAlert('Marks Saved Successfully');
+}
+function printSheet(){
+    document.getElementById('printHeader').style.display = 'block';
+    window.print();
+    document.getElementById('printHeader').style.display = 'none';
+}
+init();
+</script>
+</body>
+</html>

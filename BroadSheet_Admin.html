@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UMMUL QURA'AN BROAD SHEET - ADMIN</title>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root{
+  --navy:#0b2a5b; --navy-deep:#071c3f; --gold:#d9a526; --green:#2f6b3a;
+  --ivory:#fbf7ec; --line:#e3dcc8; --ink:#1b2430; --muted:#66707d;
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI,sans-serif}
+body{background:var(--ivory);color:var(--ink);padding:15px}
+.container{background:#fff;border:1px solid var(--line);border-radius:15px;padding:15px;box-shadow:0 5px 20px rgba(11,42,91,.08)}
+.header{background:var(--navy);color:#fff;padding:18px;border-radius:12px;border-bottom:4px solid var(--gold);margin-bottom:15px;text-align:center}
+.header h1{font-size:20px;font-weight:700}
+.header p{color:#c9d6ee}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px}
+.controls select,.controls button{padding:12px;border:none;border-radius:8px;font-size:14px}
+.controls select{background:var(--ivory);border:1.5px solid var(--line);color:var(--ink);flex:1;min-width:120px}
+.controls select:focus{outline:none;border-color:var(--gold)}
+.controls button{background:var(--navy);color:#fff;cursor:pointer;font-weight:bold;border-bottom:3px solid var(--gold)}
+.controls button:hover{background:var(--navy-deep)}
+.controls button.save{background:var(--green);border-bottom:none}
+.controls button:disabled{background:#999;border-bottom:none;cursor:not-allowed}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:15px}
+.card{background:#fff;border:1px solid var(--line);border-left:5px solid var(--gold);border-radius:12px;padding:12px}
+.card h4{font-size:12px;color:var(--muted)}
+.card h2{color:var(--navy);font-size:20px}
+.table-container{overflow:auto}
+table{width:100%;border-collapse:collapse;min-width:800px}
+th{background:var(--navy);color:#fff;padding:10px;border:1px solid var(--navy-deep);font-size:11px}
+td{padding:8px;border:1px solid var(--line);text-align:center;font-size:11px}
+tr:nth-child(even){background:var(--ivory)}
+.student-name{text-align:left;font-weight:600}
+.footer{margin-top:20px;background:var(--ivory);border:1px solid var(--line);padding:20px;border-radius:10px;display:flex;flex-direction:column;gap:15px}
+.footer-item{display:flex;flex-direction:column;gap:5px}
+.footer label{font-weight:bold;font-size:14px;color:var(--navy)}
+.footer input{border:none;border-bottom:2px solid var(--navy);background:transparent;padding:8px 5px;font-size:15px;font-family:inherit;outline:none;width:100%}
+.footer input:focus{border-bottom-color:var(--gold)}
+.alert{padding:12px;border-radius:8px;margin:10px 0;display:none;text-align:center;font-weight:bold;font-size:14px}
+.alert.success{background:#d9efdc;color:#1f5a2c}
+.alert.error{background:#fee2e2;color:#991b1b}
+.no-class{color:#9b1c1c;text-align:center;font-weight:bold;margin:20px 0;font-size:14px}
+@media print{.controls,.alert{display:none}body{background:#fff;padding:0}.container{box-shadow:none;border:none}.header{background:#fff;color:#000;border-bottom:2px solid #000}.header p{color:#000}th{background:#fff;color:#000;border:1px solid #000}td{border:1px solid #000}tr:nth-child(even){background:#fff}.card{border:1px solid #000}.footer{background:#fff}}
+@media(min-width:768px){.stats{grid-template-columns:repeat(4,1fr)}.footer{flex-direction:row;justify-content:space-between}}
+</style>
+</head>
+<body>
+
+<div class="container">
+<div class="header"><h1>STANDARD UMMUL QURA'AN ACADEMY, SOKOTO - BROAD SHEET - ADMIN</h1><p>Academic Performance Summary</p></div>
+<div id="alert" class="alert"></div>
+
+<div class="controls">
+<select id="classSelect"><option value="">Loading...</option></select>
+<select id="termSelect"><option value="">Select Term</option></select>
+<select id="sessionSelect"><option value="">Select Session</option></select>
+<button id="genBtn" onclick="generateBroadSheet()" disabled>Generate</button>
+<button class="save" onclick="saveBroadSheet()">Save</button>
+<button onclick="window.print()">Print</button>
+</div>
+
+<div id="noClassMsg"></div>
+
+<div class="stats">
+<div class="card"><h4>Total Students</h4><h2 id="studentCount">0</h2></div>
+<div class="card"><h4>Total Subjects</h4><h2 id="subjectCount">0</h2></div>
+<div class="card"><h4>Class Average</h4><h2 id="classAverage">0</h2></div>
+<div class="card"><h4>Highest Score</h4><h2 id="highestScore">0</h2></div>
+</div>
+
+<div class="table-container"><table><thead><tr id="subjectHeader"><th>S/N</th><th>STUDENT NAME</th></tr></thead><tbody id="broadsheetBody"></tbody></table></div>
+
+<div class="footer">
+<div class="footer-item"><label>Form Master:</label><input type="text" id="formMasterName" placeholder="Type Form Master Name"></div>
+<div class="footer-item"><label>Principal:</label><input type="text" id="principalName" placeholder="Type Principal Name"></div>
+</div>
+</div>
+
+<script>
+const SUPABASE_URL="https://iokjzbiludjthrqrehxp.supabase.co";
+const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlva2p6YmlsdWRqdGhycXJlaHhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ1OTA0NzIsImV4cCI6MjExMDE2NjQ3Mn0.CFuJS7TGjtt2U_UESu3j9vzpdm6jAKadabFsYUUc8gw";
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let currentData = {classId:"",termId:"",sessionId:"",className:"",termName:"",sessionName:"",students:[],subjects:[]}
+function showAlert(msg,type='success'){const a=document.getElementById('alert');a.className=`alert ${type}`;a.innerText=msg;a.style.display='block';setTimeout(()=>a.style.display='none',3000)}
+function formatPosition(n){if(n%100>=11 && n%100<=13){return `${n}<sup>th</sup>`;}switch(n%10){case 1:return `${n}<sup>st</sup>`;case 2:return `${n}<sup>nd</sup>`;case 3:return `${n}<sup>rd</sup>`;default:return `${n}<sup>th</sup>`;}}
+
+loadDropdowns();
+async function loadDropdowns(){
+try{
+const classSelect=document.getElementById("classSelect");
+const termSelect=document.getElementById("termSelect");
+const sessionSelect=document.getElementById("sessionSelect");
+const genBtn = document.getElementById("genBtn");
+
+// ADMIN: LOAD ALL CLASSES FROM CLASSES TABLE
+const {data:classes, error} = await db.from("classes").select("id, class_name").order("class_name");
+if(error){ showAlert('Error: '+error.message,'error'); classSelect.innerHTML = `<option value="">Error Loading</option>`; return; }
+if(!classes || classes.length === 0){ classSelect.innerHTML = `<option value="">No Classes Found</option>`; return; }
+classSelect.innerHTML = `<option value="">Select Class</option>`;
+classes.forEach(c=>{ classSelect.innerHTML+=`<option value="${c.id}">${c.class_name}</option>`; });
+genBtn.disabled = false;
+const {data:terms} = await db.from("terms").select("*").order("id");
+(terms||[]).forEach(t=>{ termSelect.innerHTML+=`<option value="${t.id}">${t.term_name}</option>`});
+const {data:sessions} = await db.from("sessions").select("*").order("id");
+(sessions||[]).forEach(s=>{ sessionSelect.innerHTML+=`<option value="${s.id}">${s.session_name}</option>`});
+}catch(err){
+  console.error(err);
+  showAlert('Error loading: '+err.message,'error');
+  document.getElementById("classSelect").innerHTML = `<option value="">Error Loading</option>`;
+}
+}
+
+async function generateBroadSheet(){
+const classId=document.getElementById("classSelect").value;
+const className=document.getElementById("classSelect").options[document.getElementById("classSelect").selectedIndex].text;
+const termId=document.getElementById("termSelect").value;
+const termName=document.getElementById("termSelect").options[document.getElementById("termSelect").selectedIndex].text;
+const sessionId=document.getElementById("sessionSelect").value;
+const sessionName=document.getElementById("sessionSelect").options[document.getElementById("sessionSelect").selectedIndex].text;
+if(!classId||!termId||!sessionId){alert("Please Select Class, Term and Session");return;}
+currentData = {classId,termId,sessionId,className,termName,sessionName}
+const header=document.getElementById("subjectHeader");const body=document.getElementById("broadsheetBody");
+header.innerHTML="<th>S/N</th><th>STUDENT NAME</th>";body.innerHTML="Loading...";
+// UMMUL FIX: class_subjects may be empty -> teacher_subjects for this class -> all subjects
+let subjects=[];
+let {data:classSubjects} = await db.from("class_subjects").select("*").eq("class_id",classId);
+if(classSubjects && classSubjects.length) subjects = classSubjects.map(s=>({subject_id:s.subject_id, subject_name:s.subject_name}));
+if(!subjects.length){
+  let {data:ts} = await db.from("teacher_subjects").select("*").eq("class_id", classId);
+  if(ts && ts.length) subjects = [...new Map(ts.map(s=>[s.subject_id, {subject_id:s.subject_id, subject_name:s.subject_name}])).values()];
+}
+if(!subjects.length){
+  let {data:allSub} = await db.from("subjects").select("*");
+  subjects = (allSub||[]).map(s=>({subject_id:s.id, subject_name:s.subject_name}));
+}
+currentData.subjects = subjects;
+for(const item of subjects){header.innerHTML+=`<th>${item.subject_name.toUpperCase()}</th>`;}
+header.innerHTML+=`<th>TOTAL</th><th>POSITION</th>`;
+document.getElementById("subjectCount").textContent= subjects.length;
+const {data:students} = await db.from("students").select("*").eq("class_id", classId).order("student_name");
+currentData.students = students||[];document.getElementById("studentCount").textContent= (students||[]).length;
+const {data:allResults} = await db.from("results").select("*").eq("class_id", classId).eq("term_id", termId).eq("session_id", sessionId);
+let saved=null;
+try{ let r = await db.from("broad_sheet_settings").select("*").eq("class_id",classId).eq("term_id",termId).eq("session_id",sessionId).maybeSingle(); saved=r.data; }catch(e){}
+if(saved){document.getElementById("formMasterName").value = saved.form_master_name || '';document.getElementById("principalName").value = saved.principal_name || '';}
+let broadData=[];
+for(const student of (students||[])){let studentMarks=[];let grandTotal=0;
+for(const subject of subjects){const mark = (allResults||[]).find(r => r.student_id == student.id && r.subject_id == subject.subject_id);const score = mark? (mark.total || (parseInt(mark.ca1)||0)+(parseInt(mark.ca2)||0)+(parseInt(mark.exam)||0)) : 0;studentMarks.push(score);grandTotal+=score;}
+broadData.push({student,marks:studentMarks,total:grandTotal,position:0});}
+broadData.sort((a,b)=>b.total-a.total);let position = 1;
+broadData.forEach((item,index)=>{if(index > 0 && item.total < broadData[index-1].total){position = index + 1;}item.position = position;});
+const highestScore= broadData.length? broadData[0].total : 0;document.getElementById("highestScore").textContent= highestScore;
+let classTotal=0;broadData.forEach(item=>{ classTotal+=item.total; });
+const classAverage= (students||[]).length? (classTotal/students.length).toFixed(2) : 0;document.getElementById("classAverage").textContent= classAverage;
+body.innerHTML = "";
+broadData.forEach((item,index)=>{let row="<tr>";row+=`<td>${index+1}</td>`;row+=`<td class="student-name">${item.student.student_name}</td>`;
+subjects.forEach((subject,subIndex)=>{row+=`<td>${item.marks[subIndex]||0}</td>`;});
+row+=`<td><b>${item.total}</b></td>`;row+=`<td><b>${formatPosition(item.position)}</b></td>`;row+="</tr>";body.innerHTML+=row;});
+}
+
+async function saveBroadSheet(){
+if(!currentData.classId){alert("Generate broadsheet first");return;}
+const formMasterName = document.getElementById("formMasterName").value;
+const principalName = document.getElementById("principalName").value;
+showAlert('Saving...','success');
+const {error} = await db.from("broad_sheet_settings").upsert({
+class_id: currentData.classId,class_name: currentData.className,term_id: currentData.termId,term_name: currentData.termName,
+session_id: currentData.sessionId,session_name: currentData.sessionName,form_master_name: formMasterName,principal_name: principalName
+},{onConflict: 'class_id,term_id,session_id'});
+if(error){showAlert('Error: '+error.message,'error');}else{showAlert('BroadSheet Settings Saved Successfully');}
+}
+</script>
+</body>
+</html>

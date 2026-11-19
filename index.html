@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>School Results Portal - Standard Ummul Qura'an Academy, Sokoto</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@700;800&display=swap');
+  :root{
+    --navy:#0b2a5b; --navy-deep:#071c3f; --navy-hi:#143a78; --navy-lo:#041433;
+    --gold:#d9a526;
+    --soft:#ece8dc; --soft-hi:#ffffff; --soft-lo:#c9c3b0;
+    --ink:#1b2430; --muted:#66707d;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif}
+  body{min-height:100vh;background:var(--soft);color:var(--ink)}
+  .page{display:grid;grid-template-columns:1fr;min-height:100vh}
+
+  /* Colour block 1: navy */
+  .left{background:var(--navy);color:#fff;padding:40px 28px 100px;text-align:center;border-bottom:6px solid var(--gold)}
+  .logo-box{width:128px;height:128px;border-radius:50%;margin:0 auto 22px;padding:10px;background:var(--navy);
+    box-shadow:8px 8px 18px var(--navy-lo),-8px -8px 18px var(--navy-hi)}
+  .logo-in{width:100%;height:100%;border-radius:50%;background:#fff;overflow:hidden;display:flex;align-items:center;justify-content:center;
+    box-shadow:inset 3px 3px 7px rgba(0,0,0,.18),inset -3px -3px 7px rgba(255,255,255,.9)}
+  .logo-in img{width:100%;height:100%;object-fit:contain}
+  .school-3d{font-family:'Outfit',sans-serif;font-size:26px;line-height:1.2;font-weight:800;margin-bottom:8px}
+  .sub-title{font-size:17px;font-weight:600;color:#c9d6ee;margin-bottom:12px}
+  .left p{font-size:14px;line-height:1.6;color:#c9d6ee;max-width:380px;margin:0 auto}
+  .edu-icon{margin-top:24px;display:flex;gap:14px;justify-content:center}
+  .edu-icon div{width:54px;height:54px;display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:14px;background:var(--navy);
+    box-shadow:5px 5px 11px var(--navy-lo),-5px -5px 11px var(--navy-hi)}
+
+  /* Colour block 2: soft ivory */
+  .right{background:var(--soft);padding:0 20px 40px}
+  .card{background:var(--soft);border-radius:26px;max-width:420px;margin:-64px auto 0;padding:30px 24px;
+    box-shadow:10px 10px 22px var(--soft-lo),-10px -10px 22px var(--soft-hi)}
+  .card h1{font-size:24px;margin-bottom:5px}
+  .card .sub{font-size:13px;color:var(--muted);margin-bottom:8px}
+  .form-group{margin-top:18px}
+  .form-group label{display:block;font-size:13px;font-weight:600;margin:0 0 8px 4px}
+  .form-group input,.form-group select{width:100%;padding:15px 18px;background:var(--soft);border:none;border-radius:16px;font-size:15px;color:var(--ink);
+    box-shadow:inset 5px 5px 10px var(--soft-lo),inset -5px -5px 10px var(--soft-hi)}
+  .form-group input::placeholder{color:#9a9686}
+  .form-group input:focus,.form-group select:focus{outline:2px solid var(--gold);outline-offset:2px}
+  select{appearance:none}
+  .btn{width:100%;padding:16px;margin-top:28px;background:var(--navy);color:#fff;border:none;border-bottom:4px solid var(--gold);border-radius:16px;
+    font-size:16px;font-weight:700;cursor:pointer;box-shadow:6px 6px 14px var(--soft-lo),-6px -6px 14px var(--soft-hi)}
+  .btn:hover{background:var(--navy-deep)}
+  .btn:active{box-shadow:inset 4px 4px 9px var(--navy-lo),inset -3px -3px 7px var(--navy-hi)}
+  .btn:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+  #msg{margin-top:18px;padding:11px;border-radius:14px;font-size:13px;text-align:center;display:none;
+    box-shadow:inset 3px 3px 7px var(--soft-lo),inset -3px -3px 7px var(--soft-hi)}
+  #msg.error{display:block;color:#9b1c1c}
+  #msg.success{display:block;color:#1f6b35}
+  #msg.info{display:block;color:var(--navy)}
+
+  /* Desktop: left/right split */
+  @media(min-width:860px){
+    .page{grid-template-columns:1fr 1fr}
+    .left{display:flex;flex-direction:column;justify-content:center;align-items:center;padding:60px;border-bottom:0;border-right:8px solid var(--gold)}
+    .logo-box{width:200px;height:200px;padding:14px}
+    .school-3d{font-size:34px}
+    .right{display:flex;align-items:center;padding:40px}
+    .card{margin:0 auto;width:100%}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="left">
+    <div class="logo-box"><div class="logo-in"><img src="mine-logo.png" alt="Ummul Logo"></div></div>
+    <div class="school-3d">STANDARD UMMUL<br>QURA'AN ACADEMY</div>
+    <div class="sub-title">Sokoto - School Results Portal</div>
+    <p>Secure portal for Admin and Teachers to manage students, results and reports.</p>
+    <div class="edu-icon"><div>📚</div><div>🎓</div><div>📊</div></div>
+  </div>
+  <div class="right">
+    <div class="card">
+      <h1>Welcome Back ?</h1>
+      <p class="sub">Login to continue to Ummul Qura'an Academy</p>
+      <div id="loginBox">
+        <div class="form-group">
+          <label>Username </label>
+          <input type="text" id="username" placeholder="Enter username" autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="password" placeholder="Enter password" autocomplete="current-password">
+        </div>
+        <div class="form-group">
+          <label>Select Role</label>
+          <select id="role">
+            <option value="" selected disabled>Select Role</option>
+            <option value="Admin">Admin</option>
+            <option value="Teacher">Teacher</option>
+          </select>
+        </div>
+        <button type="button" class="btn" id="loginBtn" onclick="doLogin()">Login →</button>
+        <div id="msg"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const SUPABASE_URL = "https://iokjzbiludjthrqrehxp.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlva2p6YmlsdWRqdGhycXJlaHhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ1OTA0NzIsImV4cCI6MjExMDE2NjQ3Mn0.CFuJS7TGjtt2U_UESu3j9vzpdm6jAKadabFsYUUc8gw";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+function showMsg(text, type){
+  const m = document.getElementById("msg");
+  m.textContent = text;
+  m.className = type;
+  m.style.display = "block";
+}
+async function doLogin(){
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value.trim();
+  const role = document.getElementById("role").value;
+  const btn = document.getElementById("loginBtn");
+  if(!username || !password){
+    showMsg("Please enter username and password", "error");
+    return;
+  }
+  if(!role){
+    showMsg("Please select your Role - Admin or Teacher", "error");
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = "Checking...";
+  showMsg("Connecting...", "info");
+  try{
+    const { data, error } = await supabaseClient.rpc("check_ummul_login", {
+      p_username: username,
+      p_password: password,
+      p_role: role
+    });
+    if(error){
+      showMsg("Database Error: " + error.message, "error");
+      btn.disabled = false;
+      btn.textContent = "Login →";
+      return;
+    }
+    if(data && data.length > 0 && data[0].success === true){
+      const userRole = data[0].role;
+      const userName = data[0].username;
+      showMsg("Login Successful! Welcome " , "success");
+      localStorage.setItem("ummul_user", JSON.stringify({username: userName, role: userRole}));
+      localStorage.setItem("userRole", userRole);
+      localStorage.setItem("username", userName);
+      localStorage.setItem("isSuper", 'false');
+      setTimeout(()=>{
+        if(userRole === 'Admin'){
+          window.location.href = "Admin-Dashboard.html";
+        } else if(userRole === 'Teacher'){
+          window.location.href = "Teacher-Code.html";
+        } else {
+          window.location.href = "Admin-Dashboard.html";
+        }
+      }, 1000);
+    } else {
+      showMsg("Invalid username, password or role.", "error");
+      btn.disabled = false;
+      btn.textContent = "Login →";
+    }
+  } catch(e){
+    showMsg("Connection failed: " + e.message, "error");
+    btn.disabled = false;
+    btn.textContent = "Login →";
+  }
+}
+document.getElementById("password").addEventListener("keydown", function(e){
+  if(e.key === "Enter"){ e.preventDefault(); doLogin(); }
+});
+document.getElementById("username").addEventListener("keydown", function(e){
+  if(e.key === "Enter"){ e.preventDefault(); doLogin(); }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VIEW SAVED MARKS - Admin - Ummul Qura'an Academy</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --navy:#0b2a5b; --navy-deep:#071c3f; --gold:#d9a526; --green:#2f6b3a; --red:#9b1c1c;
+  --ivory:#fbf7ec; --line:#e3dcc8; --ink:#1b2430;
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
+html, body, .box { height:auto!important; overflow:visible!important; }
+body{background:var(--ivory);color:var(--ink);padding:10px}
+.box{background:#fff;border:1px solid var(--line);border-radius:12px;padding:15px}
+h2{background:var(--navy);color:#fff;text-align:center;padding:12px;border-radius:8px;border-bottom:4px solid var(--gold);margin-bottom:15px;font-size:18px}
+.filter-bar{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:15px}
+@media(max-width:700px){.filter-bar{grid-template-columns:1fr}}
+select{padding:12px;border-radius:8px;border:1.5px solid var(--line);width:100%;font-size:14px;margin-bottom:10px;background:var(--ivory);color:var(--ink)}
+select:focus{outline:none;border:2px solid var(--gold)}
+button{padding:12px;border-radius:8px;border:none;width:100%;font-size:14px;margin-bottom:10px;font-weight:bold;cursor:pointer;color:white}
+.btn-green{background:var(--green)}
+.btn-blue{background:var(--navy);border-bottom:4px solid var(--gold)}
+.btn-blue:hover{background:var(--navy-deep)}
+.btn-red{background:var(--red)}
+.table-wrapper{overflow-x:auto;max-height:none;overflow-y:visible;margin-top:15px;width:100%}
+table{width:100%;border-collapse:collapse;font-size:11px;min-width:800px}
+th{background:var(--navy);color:white;padding:8px;text-align:center;white-space:nowrap}
+td{padding:6px;border:1px solid var(--line);text-align:center;white-space:nowrap}
+tbody tr:nth-child(even){background:var(--ivory)}
+.alert{padding:10px;border-radius:8px;margin:10px 0;display:none;text-align:center;font-weight:bold}
+.alert.success{background:#d9efdc;color:#1f5a2c}
+.alert.error{background:#fee2e2;color:#991b1b}
+#printHeader{display:none;text-align:center;margin-bottom:15px;padding-bottom:10px;border-bottom:2px solid #000}
+#printHeader h2{margin:0;background:none;color:#000;font-size:20px;border:none}
+#printHeader h3{margin:5px 0;color:#000;font-size:16px}
+#printHeader p{margin:5px 0;font-size:12px}
+@media print{body{background:white}.filter-bar,button{visibility:hidden;position:absolute;left:-9999px}.box{box-shadow:none;border:none;padding:0}h2.screen-title{display:none}#printHeader{display:block!important}table{width:100%;border-collapse:collapse;font-size:12px}table,th,td{border:1px solid #000}th{background:white;color:#000}tbody tr:nth-child(even){background:white}}
+</style>
+</head>
+<body>
+<div class="box">
+<h2 class="screen-title">VIEW SAVED MARKS - ADMIN - UMMUL QURA'AN ACADEMY</h2>
+<div id="printHeader">
+    <h2>STANDARD UMMUL QURA'AN ACADEMY, SOKOTO</h2>
+    <h3>VIEW SAVED MARKS</h3>
+    <p><b>Class:</b> <span id="printClass"></span> | <b>Subject:</b> <span id="printSubject"></span> | <b>Session:</b> <span id="printSession"></span> | <b>Term:</b> <span id="printTerm"></span></p>
+</div>
+<div id="alertBox" class="alert"></div>
+<div class="filter-bar">
+    <select id="vsClass"><option value="">Select Class</option></select>
+    <select id="vsSubject"><option value="">Select Subject</option></select>
+    <select id="vsSession"><option value="">Select Session</option></select>
+    <select id="vsTerm"><option value="">Select Term</option></select>
+</div>
+<button class="btn-green" onclick="viewMarks()">Load Saved Marks</button>
+<button class="btn-blue" onclick="printSheet()">Print</button>
+<button class="btn-red" onclick="deleteMarks()">Delete All Marks For This Filter</button>
+<div class="table-wrapper">
+    <table>
+        <thead><tr><th>S/N</th><th style="text-align:left">STUDENT NAME</th><th>ADMISSION NO</th><th>1ST C.A<br>(20)</th><th>2ND C.A<br>(20)</th><th>EXAM<br>(60)</th><th>TOTAL<br>(100)</th><th>GRADE</th><th>POSITION</th><th>TEACHER</th></tr></thead>
+        <tbody id="viewBody"><tr><td colspan="10">Select filters and click Load Saved Marks</td></tr></tbody>
+    </table>
+</div>
+</div>
+<script>
+const db = supabase.createClient('https://iokjzbiludjthrqrehxp.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlva2p6YmlsdWRqdGhycXJlaHhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ1OTA0NzIsImV4cCI6MjExMDE2NjQ3Mn0.CFuJS7TGjtt2U_UESu3j9vzpdm6jAKadabFsYUUc8gw')
+let currentResults = []; let sessionsList = []; let termsList = []; let subjectsList = [];
+function showAlert(msg, type){ const box = document.getElementById('alertBox'); box.className = `alert ${type}`; box.innerText = msg; box.style.display = 'block'; setTimeout(() => box.style.display = 'none', 3000) }
+// UMMUL RULE: NO BLANK - Total 0 = F, Position 1st
+function getGrade(total){
+    total = parseInt(total)||0;
+    if(total >= 70) return 'A';
+    if(total >= 60) return 'B';
+    if(total >= 50) return 'C';
+    if(total >= 45) return 'D';
+    if(total >= 40) return 'E';
+    return 'F';
+}
+function getPosition(rank){
+    if(!rank) return '';
+    let suffix = ['th','st','nd','rd'];
+    let v = rank % 100;
+    return rank + '<sup>' + (suffix[(v-20)%10] || suffix[v] || suffix[0]) + '</sup>';
+}
+function calculatePositions(){
+    let sorted = [...currentResults].sort((a,b)=>b.total-a.total);
+    let position = 1;
+    sorted.forEach((s,i)=>{
+        if(i > 0 && s.total === sorted[i-1].total){ s.position = sorted[i-1].position; } else { s.position = position; }
+        position++;
+    });
+}
+async function loadDropdowns(){
+    const { data: sessions } = await db.from('sessions').select('*')
+    const { data: terms } = await db.from('terms').select('*')
+    const { data: subjects } = await db.from('subjects').select('*')
+    const { data: classes } = await db.from('classes').select('*').order('class_name')
+    sessionsList = sessions||[]; termsList = terms||[]; subjectsList = subjects||[];
+    vsSession.innerHTML = '<option value="">Select Session</option>' + sessionsList.map(s => `<option value="${s.id}">${s.session_name}</option>`).join('')
+    vsTerm.innerHTML = '<option value="">Select Term</option>' + termsList.map(t => `<option value="${t.id}">${t.term_name}</option>`).join('')
+    vsClass.innerHTML = '<option value="">Select Class</option>' + (classes||[]).map(c => `<option value="${c.id}">${c.class_name}</option>`).join('')
+    vsSubject.innerHTML = '<option value="">Select Subject</option>' + subjectsList.map(s => `<option value="${s.id}">${s.subject_name}</option>`).join('')
+}
+vsClass.onchange = async () => {
+    let cid = vsClass.value;
+    if(!cid) return;
+    // Try class_subjects first (your original logic) - if empty, keep ALL subjects so select never goes empty
+    let {data: assigned} = await db.from('class_subjects').select('*').eq('class_id', cid);
+    if(assigned && assigned.length>0){
+        vsSubject.innerHTML = '<option value="">Select Subject</option>' + assigned.map(s=>`<option value="${s.subject_id}">${s.subject_name}</option>`).join('')
+    } else {
+        vsSubject.innerHTML = '<option value="">Select Subject</option>' + subjectsList.map(s => `<option value="${s.id}">${s.subject_name}</option>`).join('')
+    }
+}
+async function viewMarks(){
+    const clsId = vsClass.value; const subId = vsSubject.value; const sessId = vsSession.value; const termId = vsTerm.value;
+    if(!clsId ||!subId ||!sessId ||!termId) return showAlert('Please select all filters', 'error');
+    showAlert('Loading...', 'success');
+    document.getElementById('printClass').innerText = vsClass.options[vsClass.selectedIndex].text;
+    document.getElementById('printSubject').innerText = vsSubject.options[vsSubject.selectedIndex].text;
+    document.getElementById('printSession').innerText = sessionsList.find(s=>s.id==sessId)?.session_name;
+    document.getElementById('printTerm').innerText = termsList.find(t=>t.id==termId)?.term_name;
+    const { data: stu } = await db.from('students').select('*').eq('class_id', clsId).order('student_name');
+    const { data: results, error } = await db.from('results').select('*').eq('class_id', clsId).eq('subject_id', subId).eq('session_id', sessId).eq('term_id', termId);
+    if(error) return showAlert('Error: ' + error.message, 'error');
+    if(!results || results.length === 0){ viewBody.innerHTML = '<tr><td colspan="10">No results found</td></tr>'; currentResults = []; return; }
+    currentResults = results.map(r => {
+        let total = (+r.ca1||0) + (+r.ca2||0) + (+r.exam||0);
+        let s = (stu||[]).find(x=>x.id==r.student_id);
+        return {...r, total: total, grade: getGrade(total), position: 0, admission_no: s ? s.admission_no : '-'}
+    });
+    calculatePositions();
+    let displayList = [...currentResults].sort((a,b)=>b.total - a.total);
+    viewBody.innerHTML = displayList.map((r,i) => `
+        <tr>
+            <td>${i+1}</td>
+            <td style="text-align:left">${r.student_name}</td>
+            <td><b>${r.admission_no||'-'}</b></td>
+            <td>${r.ca1 ?? 0}</td>
+            <td>${r.ca2 ?? 0}</td>
+            <td>${r.exam ?? 0}</td>
+            <td><b>${r.total}</b></td>
+            <td><b>${r.grade}</b></td>
+            <td>${getPosition(r.position)}</td>
+            <td>${r.teacher_name||'-'}</td>
+        </tr>`).join('');
+    showAlert('Loaded Successfully', 'success');
+    if(window.parent) window.parent.postMessage('resize','*');
+}
+async function deleteMarks(){
+    const clsId = vsClass.value; const subId = vsSubject.value; const sessId = vsSession.value; const termId = vsTerm.value;
+    if(!clsId||!subId||!sessId||!termId) return showAlert('Please select all filters','error');
+    if(!confirm('Delete ALL marks for this Class + Subject + Session + Term?')) return;
+    const {error} = await db.from('results').delete().eq('class_id',clsId).eq('subject_id',subId).eq('session_id',sessId).eq('term_id',termId);
+    if(error) return showAlert('Error: '+error.message,'error');
+    showAlert('Deleted Successfully','success');
+    viewBody.innerHTML='<tr><td colspan="10">Deleted.</td></tr>';
+}
+function printSheet(){
+    document.getElementById('printHeader').style.display = 'block';
+    window.print();
+    document.getElementById('printHeader').style.display = 'none';
+}
+loadDropdowns();
+</script>
+</body>
+</html>

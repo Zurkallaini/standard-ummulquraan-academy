@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard - STANDARD UMMUL QURA'AN ACADEMY, SOKOTO</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0b2a5b; --navy-deep:#071c3f; --navy-hi:#143a78; --navy-lo:#041433;
+  --gold:#d9a526; --green:#2f6b3a; --red:#9b1c1c;
+  --soft:#ece8dc; --soft-hi:#ffffff; --soft-lo:#c9c3b0;
+  --ink:#1b2430; --muted:#66707d;
+  --raise:8px 8px 18px var(--soft-lo),-8px -8px 18px var(--soft-hi);
+  --raise-sm:5px 5px 11px var(--soft-lo),-5px -5px 11px var(--soft-hi);
+  --inset:inset 4px 4px 9px var(--soft-lo),inset -4px -4px 9px var(--soft-hi);
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins','Segoe UI',Arial,sans-serif}
+body{background:var(--soft);color:var(--ink);overflow-x:hidden}
+
+/* Navy block: sidebar */
+.sidebar{position:fixed;left:-260px;top:0;width:260px;height:100%;background:var(--navy);transition:0.3s;z-index:1000;padding:20px 14px 0;border-right:4px solid var(--gold);overflow-y:auto}
+.sidebar.active{left:0;box-shadow:2px 0 15px rgba(0,0,0,0.3)}
+.sidebar h2{padding:18px;color:#fff;font-size:20px;font-weight:700;text-align:center;border-bottom:2px solid var(--gold);margin-bottom:18px}
+.sidebar a{display:flex;align-items:center;padding:13px 16px;margin-bottom:12px;color:#dbe4f5;text-decoration:none;font-size:15px;font-weight:500;border-radius:14px;cursor:pointer;background:var(--navy);box-shadow:4px 4px 9px var(--navy-lo),-4px -4px 9px var(--navy-hi)}
+.sidebar a:hover{color:var(--gold)}
+.sidebar a.active{color:var(--gold);box-shadow:inset 3px 3px 7px var(--navy-lo),inset -3px -3px 7px var(--navy-hi)}
+.sidebar a i{margin-right:12px;font-size:18px;width:20px;text-align:center}
+.overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(4,20,51,0.55);z-index:999}
+.overlay.active{display:block}
+
+/* Ivory block: content */
+  .topbar{background:var(--navy);color:#fff;padding:15px 60px;display:flex;justify-content:center;align-items:center;position:sticky;top:0;z-index:900;border-bottom:4px solid var(--gold);box-shadow:0 4px 12px rgba(4,20,51,.35)}
+.hamburger{font-size:22px;cursor:pointer;border:none;color:var(--gold);position:absolute;left:10px;width:42px;height:42px;border-radius:12px;background:var(--navy);box-shadow:4px 4px 9px var(--navy-lo),-4px -4px 9px var(--navy-hi)}
+.hamburger:active{box-shadow:inset 3px 3px 7px var(--navy-lo),inset -3px -3px 7px var(--navy-hi)}
+.topbar h2{font-size:18px;color:#fff;text-align:center}
+.main{margin-left:0;padding:22px;transition:0.3s}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:22px;margin-bottom:24px}
+.card{background:var(--soft);border-radius:20px;padding:20px;display:flex;align-items:center;gap:15px;box-shadow:var(--raise);border-left:5px solid var(--gold)}
+.card i{font-size:26px;color:var(--navy);background:var(--soft);padding:15px;border-radius:14px;box-shadow:var(--inset)}
+.card h3{font-size:14px;color:var(--muted);font-weight:500}
+.card .count{font-size:28px;font-weight:bold;color:var(--navy)}
+.box{background:var(--soft);border-radius:22px;padding:22px;margin-bottom:24px;box-shadow:var(--raise)}
+.box h2{margin-bottom:16px;font-size:18px;color:var(--navy)}
+.table-wrapper{overflow-x:auto;width:100%;border-radius:16px;padding:8px;box-shadow:var(--inset)}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:650px}
+th,td{padding:10px;text-align:center;border-bottom:1px solid var(--soft-lo);white-space:nowrap}
+th{background:var(--navy);color:#fff;text-transform:uppercase;font-size:11px;border-bottom:3px solid var(--gold)}
+th:first-child{border-radius:10px 0 0 0}th:last-child{border-radius:0 10px 0 0}
+td.subject-cell span,td.class-cell span{display:inline-block;background:var(--soft);padding:4px 10px;border-radius:8px;margin:2px;font-size:12px;color:var(--navy);font-weight:600;box-shadow:inset 2px 2px 5px var(--soft-lo),inset -2px -2px 5px var(--soft-hi)}
+.user-photo{width:38px;height:38px;border-radius:50%;object-fit:cover;background:var(--soft);display:flex;align-items:center;justify-content:center;color:var(--muted);margin:auto;overflow:hidden;box-shadow:var(--raise-sm)}
+.user-photo img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.alert{padding:11px;border-radius:14px;margin-bottom:12px;font-weight:600;display:none;box-shadow:var(--inset)}
+.alert.success{color:#1f6b35}
+.alert.error{color:var(--red)}
+.btn-sm{padding:7px 14px;border:none;border-radius:10px;cursor:pointer;font-size:12px;margin:3px;color:#fff;font-weight:600;box-shadow:3px 3px 7px var(--soft-lo),-3px -3px 7px var(--soft-hi)}
+.btn-sm:active{box-shadow:inset 2px 2px 5px rgba(0,0,0,.35)}
+.btn-del{background:var(--red)}
+.btn-update{background:var(--navy)}
+.btn-green{background:var(--green)}
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(4,20,51,0.6);justify-content:center;align-items:center;z-index:2000;padding:15px}
+.modal.active{display:flex}
+.modal-content{background:var(--soft);padding:26px;border-radius:26px;width:100%;max-width:450px;box-shadow:10px 10px 22px var(--navy-lo),-6px -6px 16px var(--navy-hi);border-top:5px solid var(--gold)}
+.form-group{margin-bottom:15px}
+.form-group label{font-weight:600;margin-bottom:6px;display:block;font-size:13px;color:var(--ink)}
+.modal-content input,.modal-content select,.box input,.box select{width:100%;padding:13px 16px;border:none;border-radius:14px;margin-bottom:10px;background:var(--soft);color:var(--ink);box-shadow:var(--inset)}
+.modal-content input:focus,.modal-content select:focus,.box input:focus,.box select:focus{outline:2px solid var(--gold);outline-offset:2px}
+.btn{padding:14px 20px;background:var(--navy);color:#fff;border:none;border-bottom:4px solid var(--gold);border-radius:14px;cursor:pointer;font-weight:600;width:100%;font-size:15px;box-shadow:var(--raise-sm)}
+.btn:hover{background:var(--navy-deep)}
+.btn:active{box-shadow:inset 4px 4px 9px var(--navy-lo),inset -3px -3px 7px var(--navy-hi)}
+.btn-group{display:flex;gap:10px}
+.photo-preview{width:80px;height:80px;border-radius:14px;object-fit:cover;box-shadow:var(--raise-sm);margin-bottom:10px;display:none}
+iframe.admin-frame{width:100%;height:auto;min-height:600px;border:none;border-radius:16px;display:block;background:var(--soft)}
+@media(min-width:992px){.main{margin-left:260px}.sidebar{left:0}.hamburger{display:none}.overlay{display:none!important}}
+</style>
+
+</head>
+<body>
+<div class="sidebar" id="sidebar">
+<h2>ADMIN MENU</h2>
+<a href="#" onclick="showSection('dashboard', event)" class="active"><i class="fa-solid fa-chart-simple"></i> Dashboard</a>
+<a href="#" onclick="showSection('userManagement', event)"><i class="fa-solid fa-users"></i> Users</a>
+<a href="#" onclick="showSection('classes', event)"><i class="fa-solid fa-school"></i> Add Classes</a>
+<a href="#" onclick="showSection('subjects', event)"><i class="fa-solid fa-book"></i> Add Subjects</a>
+<a href="#" onclick="showSection('classSubjectsAssign', event)"><i class="fa-solid fa-book-open"></i> Assign Subject to Class</a>
+<a href="#" onclick="showSection('classRegister', event)"><i class="fa-solid fa-clipboard"></i> Class Register</a>
+<a href="#" onclick="showSection('teachers', event)"><i class="fa-solid fa-chalkboard-user"></i> Add Teachers</a>
+<a href="#" onclick="showSection('viewTeachers', event)"><i class="fa-solid fa-user-group"></i> View Teachers</a>
+<a href="#" onclick="showSection('viewTeacherSubject', event)"><i class="fa-solid fa-book"></i> View Subject For Teacher</a>
+<a href="#" onclick="showSection('students', event)"><i class="fa-solid fa-user-graduate"></i> Add Students</a>
+<a href="#" onclick="showSection('classStudents', event)"><i class="fa-solid fa-people-roof"></i> Students List</a>
+<a href="#" onclick="showSection('viewMarks', event)"><i class="fa-solid fa-file-pen"></i>Save Marks</a>
+<a href="#" onclick="showSection('viewMarkSheet', event)"><i class="fa-solid fa-file-lines"></i>MarkSheet</a>
+<a href="#" onclick="showSection('viewReportSheet', event)"><i class="fa-solid fa-file-lines"></i>ReportSheet</a>
+<a href="#" onclick="showSection('broadSheetAdmin', event)"><i class="fa-solid fa-chart-bar"></i> BroadSheet</a>
+  <a href="#" onclick="showSection('submissionMonitorAdmin', event)"><i class="fa-solid fa-chart-simple"></i> Marks Submission Status</a>
+<a href="#" onclick="showSection('overallYearAdmin', event)"><i class="fa-solid fa-chart-pie"></i> Year Overall</a>  
+<a href="#" onclick="showSection('viewTeacherComment', event)"><i class="fa-solid fa-comment-dots"></i> Form Master Comment</a>
+<a href="#" onclick="showSection('session', event)"><i class="fa-solid fa-gear"></i> Academic Session & Term</a>
+<a href="#" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+</div>
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+<div class="main" id="main">
+<div class="topbar"><button class="hamburger" onclick="toggleSidebar()">☰</button><h2><small>STANDARD UMMUL QURA'AN ACADEMY SOKOTO</small></h2></div>
+<div id="alertBox" class="alert"></div>
+<div id="dashboard">
+<h3 style="margin-bottom:15px;margin-top:15px;"><small><center>WELCOME TO ADMIN DASHBOARD</center></small></h3>
+<div class="cards">
+<div class="card"><i class="fa-solid fa-user-graduate"></i><div><h3>Total Students</h3><div class="count" id="totalStudents">0</div></div></div>
+<div class="card"><i class="fa-solid fa-chalkboard-user"></i><div><h3>Total Teachers</h3><div class="count" id="totalTeachers">0</div></div></div>
+<div class="card"><i class="fa-solid fa-school"></i><div><h3>Total Classes</h3><div class="count" id="totalClasses">0</div></div></div>
+  <div class="card"><i class="fa-solid fa-book"></i><div><h3>Total Subjects</h3><div class="count" id="totalSubjects">0</div></div></div>
+<div class="card"><i class="fa-solid fa-user-shield"></i><div><h3>Admins</h3><div class="count" id="totalAdmins">0</div></div></div>
+</div>
+<div class="box"><h2>User Management</h2><div class="table-wrapper"><table><thead><tr><th>S/N</th><th>PHOTO</th><th>NAME</th><th>EMAIL ADDRESS</th><th>MOBILE</th><th>ROLE</th><th>ACTION</th></tr></thead><tbody id="userTable"><tr><td colspan="7">Loading...</td></tr></tbody></table></div></div>
+</div>
+<div id="userManagement" style="display:none"><h1 style="color:#1e3a8a;margin-bottom:20px;">Enter User Management</h1><div class="box"><div class="form-group"><label>Enter Name</label><input id="userName" placeholder="Enter Name"></div><div class="form-group"><label>Enter Email Address</label><input id="userEmail" type="email" placeholder="Enter Email Address"></div><div class="form-group"><label>Enter Mobile Number</label><input id="userMobile" placeholder="Enter Mobile Number"></div><div class="form-group"><label>Select Role</label><select id="userRole"><option>Select Role</option><option value="Admin">Admin</option><option value="Teacher">Teacher</option></select></div><div class="form-group"><label>Upload Photo</label><img id="photoPreview" class="photo-preview"><input type="file" id="userPhoto" accept="image/*" onchange="previewPhoto(event)"></div><div class="btn-group"><button class="btn btn-del" style="width:auto" onclick="removePhoto()">Remove Photo</button><button class="btn" id="userSaveBtn" style="width:auto" onclick="saveUser()">Save User</button></div></div></div>
+<div id="classes" style="display:none;margin-top:15px;" class="box"><h2>Manage Classes</h2><button class="btn" style="width:auto" onclick="openModal('classModal')">+ Add Class</button><div class="table-wrapper" style="margin-top:15px;"><table><thead><tr><th>S/N</th><th>CLASS NAME</th><th>ACTION</th></tr></thead><tbody id="classList"></tbody></table></div></div>
+<div id="subjects" style="display:none;margin-top:15px;" class="box"><h2>Manage Subjects</h2><input id="newSubjectName" placeholder="e.g. Mathematics"><button class="btn" onclick="saveSubject()">Save Subject</button><div class="table-wrapper" style="margin-top:15px;"><table><thead><tr><th>S/N</th><th>SUBJECT NAME</th><th>ACTION</th></tr></thead><tbody id="subjectList"></tbody></table></div></div>
+<div id="classSubjectsAssign" style="display:none;margin-top:15px;" class="box"><h2>Assign Subject to Class</h2><select id="csClass"><option>Select Class</option></select><select id="csSubject"><option>Select Subject</option></select><button class="btn" onclick="saveClassSubject()">Assign Subject</button><div class="table-wrapper" style="margin-top:15px;"><table><thead><tr><th>S/N</th><th>CLASS</th><th>SUBJECT</th><th>ACTION</th></tr></thead><tbody id="csTable"></tbody></table></div></div>
+<div id="classRegister" style="display:none;margin-top:15px;" class="box"><h2>Assign Register</h2><iframe class="admin-frame" src="AssignCLassRegister.html"></iframe></div>
+<div id="teachers" style="display:none;margin-top:15px;" class="box"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;"><h2>Manage Teachers</h2><div style="display:flex;gap:10px;"><button class="btn" style="width:auto" onclick="openModal('teacherModal')">+ Add Teacher</button><button class="btn btn-green" style="width:auto" onclick="openModal('assignTeacherModal')">Assign Subject</button></div></div><div class="table-wrapper"><table><thead><tr><th>S/N</th><th>NAME</th><th>CODE</th><th>CLASS(ES)</th><th>SUBJECT(S)</th><th>ACTION</th></tr></thead><tbody id="teacherList"></tbody></table></div></div>
+<div id="viewTeachers" style="display:none;margin-top:15px;" class="box"><h2>All Teachers</h2><div class="table-wrapper"><table><thead><tr><th>S/N</th><th>TEACHER NAME</th><th>TEACHER CODE</th></tr></thead><tbody id="allTeachersList"></tbody></table></div></div>
+<div id="viewTeacherSubject" style="display:none;margin-top:15px;" class="box"><h2>View Subject For Teacher</h2><select id="selectTeacherFilter" onchange="viewTeacherSubject()"><option>Select Teacher</option></select><div class="table-wrapper"><table><thead><tr><th>S/N</th><th>CLASS ASSIGNED</th><th>SUBJECT</th></tr></thead><tbody id="teacherSubjectList"></tbody></table></div></div>
+<div id="students" style="display:none;margin-top:15px;" class="box"><h2>Manage Students</h2><button class="btn" style="width:auto" onclick="openModal('studentModal')">+ Add Student</button><div class="table-wrapper" style="margin-top:15px;"><table><thead><tr><th>S/N</th><th>STUDENT NAME</th><th>ADMISSION NO</th><th>CLASS</th><th>ACTION</th></tr></thead><tbody id="studentList"></tbody></table></div></div>
+<div id="classStudents" style="display:none;margin-top:15px;" class="box"><h2>View Students by Class</h2><select id="studentClassFilter" onchange="viewClassStudents()"><option>Select Class</option></select><div class="table-wrapper"><table><thead><tr><th>S/N</th><th>ADMISSION NO</th><th>STUDENT NAME</th><th>ACTION</th></tr></thead><tbody id="classStudentList"></tbody></table></div></div>
+<div id="viewMarks" style="display:none;margin-top:15px;" class="box"><h2>View Save Marks</h2><iframe class="admin-frame" src="Admin-SaveMarks.html"></iframe></div>
+<div id="viewMarkSheet" style="display:none;margin-top:15px;" class="box"><h2>View MarkSheet File</h2><iframe class="admin-frame" src="Admin-MarkSheet.html"></iframe></div>
+<div id="viewReportSheet" style="display:none;margin-top:15px;" class="box"><h2>View ReportSheet File</h2><iframe class="admin-frame" src="ReportSheet_Admin.html"></iframe></div>
+<div id="viewTeacherComment" style="display:none;margin-top:15px;" class="box"><h2>Teacher Comment & Attendance</h2><iframe class="admin-frame" src="TeacherComment_Admin.html"></iframe></div>
+<div id="broadSheetAdmin" style="display:none;margin-top:15px;" class="box"><h2> BroadSheet - Admin</h2><iframe class="admin-frame" src="BroadSheet_Admin.html"></iframe></div>
+<div id="overallYearAdmin" style="display:none;margin-top:15px;" class="box"><h2> Overall Year BroadSheet - Admin</h2><iframe class="admin-frame" src="OverallMarks.html"></iframe></div>
+  <div id="submissionMonitorAdmin" style="display:none;margin-top:15px;" class="box"><h2> Marks Submission Status - Admin</h2><iframe class="admin-frame" src="Teacher-Submission.html"></iframe></div>
+<div id="session" style="display:none;margin-top:15px;" class="box"><h2>Academic Session & Term Settings</h2><input id="newSession" placeholder="Add Session e.g 2025/2026"><button class="btn" onclick="addSession()">Add Session</button><div id="sessionList" style="margin:10px 10px;"></div><input id="newTerm" placeholder="Add Term e.g 1st Term" style="margin-top:10px;"><button class="btn" onclick="addTerm()">Add Term</button><div id="termList" style="margin:10px 0;"></div></div>
+</div>
+<div class="modal" id="assignTeacherModal"><div class="modal-content"><h3>Assign Subject to Teacher</h3><div class="form-group"><label>Select Teacher</label><select id="assignTeacherSelect"></select></div><div class="form-group"><label>Select Class</label><select id="assignTeacherClass"></select></div><div class="form-group"><label>Select Subject</label><select id="assignTeacherSubject"></select></div><div class="btn-group"><button class="btn btn-green" onclick="assignSubjectToTeacher()">Assign</button><button class="btn btn-del" onclick="closeModal('assignTeacherModal')">Cancel</button></div></div></div>
+<div class="modal" id="teacherModal"><div class="modal-content"><h3>Add Teacher</h3><input id="teacherName" placeholder="Teacher Name"><input id="teacherCode" placeholder="Teacher Code"><div class="btn-group"><button class="btn" onclick="saveTeacher()">Save</button><button class="btn btn-del" onclick="closeModal('teacherModal')">Cancel</button></div></div></div>
+<div class="modal" id="classModal"><div class="modal-content"><h3>Add Class</h3><input id="className" placeholder="Class Name"><div class="btn-group"><button class="btn" onclick="saveClass()">Save</button><button class="btn btn-del" onclick="closeModal('classModal')">Cancel</button></div></div></div>
+<div class="modal" id="studentModal"><div class="modal-content"><h3>Add Student</h3><input id="studentName" placeholder="Student Full Name"><input id="studentAdmission" placeholder="Admission No e.g UMM/001"><select id="studentClass"></select><div class="btn-group"><button class="btn" onclick="saveStudent()">Save</button><button class="btn btn-del" onclick="closeModal('studentModal')">Cancel</button></div></div></div>
+<div id="editStudentModal" class="modal"><div class="modal-content"><span style="float:right;cursor:pointer;font-size:22px" onclick="closeModal('editStudentModal')">&times;</span><h2>Update Student</h2><div class="form-group"><label>Student Name</label><input type="text" id="editStudentNameInput" placeholder="Enter new student name"></div><div class="form-group"><label>Admission No</label><input type="text" id="editStudentAdmissionInput" placeholder="Admission No"></div><button class="btn" onclick="saveEditedStudent()">Save Changes</button></div></div>
+    <script>
+// UMMUL QURA'AN ACADEMY - SOKOTO - SAME PROJECT AS LOGIN
+const SUPABASE_URL = 'https://iokjzbiludjthrqrehxp.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlva2p6YmlsdWRqdGhycXJlaHhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ1OTA0NzIsImV4cCI6MjExMDE2NjQ3Mn0.CFuJS7TGjtt2U_UESu3j9vzpdm6jAKadabFsYUUc8gw';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let currentPhotoBase64 = '';
+let classesData = []; let subjectsData = []; let teachersData = [];
+let studentsData = []; let usersData = []; let sessionsData = [];
+let termsData = []; let editUserId = null; let editStudentId = null;
+let CURRENT_TERM = ""; let AMOUNT_PER_STUDENT = 100;
+let BANK_NAME = ""; let ACCOUNT_NAME = ""; let ACCOUNT_NO = "";
+let TRIAL_ACTIVE = true;
+const isSuperUmmul = localStorage.getItem('isSuperUmmul');
+function logout(){ localStorage.removeItem('ummul_user'); window.location.href = 'index.html'; }
+async function getSettings(){
+  try{
+    let {data} = await db.from('ummul_app_settings').select('*').eq('id',1).single();
+    if(data){ CURRENT_TERM = data.current_term || ""; AMOUNT_PER_STUDENT = data.amount_per_student || 100; BANK_NAME = data.bank_name || ""; ACCOUNT_NAME = data.account_name || ""; ACCOUNT_NO = data.account_no || ""; TRIAL_ACTIVE = data.trial_active !== false; return TRIAL_ACTIVE; }
+  }catch(e){}
+  return true;
+}
+async function checkSubscription(){
+  document.body.style.visibility = 'visible';
+  if(isSuperUmmul === 'true'){ await loadData(); return; }
+  const trialActive = await getSettings();
+  if(trialActive === true){ await loadData(); return; }
+  try{
+    let {data: subs} = await db.from('ummul_subscriptions').select('*').eq('term', CURRENT_TERM).order('created_at',{ascending:false}).limit(1);
+    let sub = subs && subs.length>0 ? subs[0] : null;
+    if(sub && sub.status === 'paid'){ await loadData(); return; }
+    let {count} = await db.from('students').select('*',{count:'exact'});
+    let amount = (count||0)*AMOUNT_PER_STUDENT;
+    const NV='#0b2a5b', GD='#d9a526', SF='#ece8dc', LO='#c9c3b0', HI='#ffffff';
+    const inset = `box-shadow:inset 4px 4px 9px ${LO},inset -4px -4px 9px ${HI};`;
+    const raise = `box-shadow:6px 6px 12px ${LO},-6px -6px 12px ${HI};`;
+    document.getElementById('subscriptionLock')?.remove();
+    document.body.insertAdjacentHTML('beforeend', `<div id="subscriptionLock" style="position:fixed;top:0;left:0;width:100%;height:100%;background:${NV};z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;font-family:'Poppins',sans-serif;"><div style="max-width:480px;width:100%;background:${SF};padding:30px;border-radius:26px;text-align:center;margin:20px 0;border-top:5px solid ${GD};box-shadow:10px 10px 22px #041433,-10px -10px 22px #143a78;">
+<h2 style="color:${NV};">Dashboard Locked</h2>
+<p style="color:#66707d;font-size:14px;margin:10px 0 18px;">Free Trial Ended. Admin must pay to unlock for ${CURRENT_TERM}</p>
+<div style="padding:15px;border-radius:16px;text-align:left;color:#1b2430;${inset}"><p><b style="color:${NV};">Term:</b> ${CURRENT_TERM}</p><p><b style="color:${NV};">Total Students:</b> ${count}</p><p><b style="color:${NV};">Rate:</b> ₦${AMOUNT_PER_STUDENT}</p></div>
+<div style="padding:15px;border-radius:16px;margin:18px 0;${raise}"><h3 style="color:${NV};">Total: ₦${amount.toLocaleString()}</h3></div>
+<div style="padding:15px;border-radius:14px;text-align:left;border-left:3px solid ${GD};color:#1b2430;${inset}">
+<p><b style="color:${NV};">Bank:</b> ${BANK_NAME}</p>
+<p><b style="color:${NV};">Account Name:</b> ${ACCOUNT_NAME}</p>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px;"><p><b style="color:${NV};">Account No:</b> <span id="acctNo">${ACCOUNT_NO}</span></p><button type="button" onclick="copyAccount(this)" style="background:${NV};color:#fff;border:none;border-bottom:3px solid ${GD};border-radius:10px;padding:7px 14px;font-weight:700;font-size:12px;cursor:pointer;">Copy</button></div>
+</div>
+<div style="text-align:left;margin:18px 0 15px;"><label style="font-size:13px;font-weight:600;">Upload Payment Proof</label><input type="file" id="proof" accept="image/*,.pdf" style="width:100%;padding:10px;margin-top:6px;border:none;border-radius:12px;background:${SF};${inset}"></div>
+<div style="text-align:left;margin-bottom:18px;"><label style="font-size:13px;font-weight:600;">Teller No / Ref</label><input type="text" id="note" placeholder="Enter transaction reference" style="width:100%;padding:13px 16px;margin-top:6px;border:none;border-radius:14px;background:${SF};color:#1b2430;${inset}"></div>
+<button onclick="submitProof(${count},${amount})" style="background:${NV};color:#fff;padding:14px;border:none;border-bottom:4px solid ${GD};border-radius:14px;width:100%;cursor:pointer;font-weight:700;${raise}">Submit Proof</button>
+<button onclick="logout()" style="background:${SF};color:#9b1c1c;padding:12px;border:none;border-radius:14px;width:100%;cursor:pointer;margin-top:12px;font-weight:600;${raise}">Logout</button>
+</div></div>`);
+  }catch(err){ console.log(err); await loadData(); }
+}
+
+function copyAccount(btn){
+  const n = String(ACCOUNT_NO);
+  const done = () => { btn.textContent = 'Copied ✓'; setTimeout(() => btn.textContent = 'Copy', 2000); };
+  const fallback = () => {
+    const t = document.createElement('textarea');
+    t.value = n; document.body.appendChild(t); t.select();
+    try { document.execCommand('copy'); done(); } catch(e){ alert('Account No: ' + n); }
+    t.remove();
+  };
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(n).then(done).catch(fallback);
+  } else { fallback(); }
+}
+async function submitProof(count, amount){
+  const file = document.getElementById('proof').files[0]; const note = document.getElementById('note').value;
+  if(!file || !note) return alert('Upload proof and enter teller no');
+  const {data: upload, error: upErr} = await db.storage.from('payment-proofs').upload(`term_${CURRENT_TERM}/${Date.now()}_${file.name}`, file);
+  if(upErr) return alert(upErr.message);
+  const proofUrl = db.storage.from('payment-proofs').getPublicUrl(upload.path).data.publicUrl;
+  await db.from('ummul_subscriptions').insert({term: CURRENT_TERM, student_count: count, amount: amount, proof_url: proofUrl, payment_note: note, status: 'pending'});
+  alert('Proof submitted. Wait for approval'); location.reload();
+}
+function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('active'); document.getElementById('overlay').classList.toggle('active'); }
+function showAlert(msg, type){ const box = document.getElementById('alertBox'); box.className = `alert ${type}`; box.innerText = msg; box.style.display = 'block'; setTimeout(()=>box.style.display='none',3000); }
+function showSection(id, e){
+  document.querySelectorAll('.main > div[id]').forEach(d => d.style.display = 'none');
+  document.getElementById(id).style.display = 'block';
+  document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
+  if(e) e.target.closest('a').classList.add('active');
+  if(window.innerWidth < 992) toggleSidebar();
+}
+function openModal(id){ document.getElementById(id).classList.add('active'); loadDropdowns(); }
+function closeModal(id){ document.getElementById(id).classList.remove('active'); }
+function resizeIframes(){ document.querySelectorAll('iframe.admin-frame').forEach(iframe => { iframe.onload = function(){ try{ let doc = iframe.contentDocument || iframe.contentWindow.document; iframe.style.height = doc.body.scrollHeight + 100 + 'px'; }catch(e){} } }); }
+document.addEventListener('DOMContentLoaded', resizeIframes);
+function previewPhoto(event){ const file = event.target.files[0]; if(file){ const reader = new FileReader(); reader.onload = function(e){ currentPhotoBase64 = e.target.result; document.getElementById('photoPreview').src = currentPhotoBase64; document.getElementById('photoPreview').style.display = 'block'; }; reader.readAsDataURL(file); } }
+function removePhoto(){ currentPhotoBase64 = ''; document.getElementById('userPhoto').value = ''; document.getElementById('photoPreview').style.display = 'none'; }
+async function saveUser(){
+  const name = document.getElementById('userName').value.trim(); const email = document.getElementById('userEmail').value.trim(); const mobile = document.getElementById('userMobile').value.trim(); const role = document.getElementById('userRole').value;
+  if(!name || !email || !mobile || role === 'Select Role') return showAlert('Please fill all fields','error');
+  const {data: existing} = await db.from('users').select('*');
+  if(existing && existing.some(u=>u.name.toLowerCase()===name.toLowerCase())) return showAlert('User name already exist','error');
+  if(existing && existing.some(u=>u.email.toLowerCase()===email.toLowerCase())) return showAlert('Email already exist','error');
+  if(existing && existing.some(u=>u.mobile===mobile)) return showAlert('Mobile already exist','error');
+  const {error} = await db.from('users').insert({name,email,mobile,role,photo:currentPhotoBase64});
+  if(error) return showAlert(error.message,'error');
+  showAlert('User Saved Successfully','success'); document.getElementById('userName').value=''; document.getElementById('userEmail').value=''; document.getElementById('userMobile').value=''; document.getElementById('userRole').value='Select Role'; removePhoto(); loadData();
+}
+async function editUser(id){
+  editUserId = id; const u = usersData.find(x=>x.id==id);
+  document.getElementById('userName').value = u.name; document.getElementById('userEmail').value = u.email; document.getElementById('userMobile').value = u.mobile; document.getElementById('userRole').value = u.role;
+  if(u.photo){ currentPhotoBase64 = u.photo; document.getElementById('photoPreview').src = u.photo; document.getElementById('photoPreview').style.display='block'; }
+  showSection('userManagement'); document.getElementById('userSaveBtn').innerText='Update User'; document.getElementById('userSaveBtn').setAttribute('onclick','updateUser()');
+}
+async function updateUser(){
+  const name = document.getElementById('userName').value.trim(); const email = document.getElementById('userEmail').value.trim(); const mobile = document.getElementById('userMobile').value.trim(); const role = document.getElementById('userRole').value;
+  if(!name || !email || !mobile || role==='Select Role') return showAlert('Please fill all fields','error');
+  const {error} = await db.from('users').update({name,email,mobile,role,photo:currentPhotoBase64}).eq('id',editUserId);
+  if(error) return showAlert(error.message,'error');
+  showAlert('User Updated Successfully','success'); document.getElementById('userName').value=''; document.getElementById('userEmail').value=''; document.getElementById('userMobile').value=''; document.getElementById('userRole').value='Select Role'; removePhoto(); document.getElementById('userSaveBtn').innerText='Save User'; document.getElementById('userSaveBtn').setAttribute('onclick','saveUser()'); editUserId=null; loadData();
+}
+async function deleteUser(id){ if(confirm('Delete this user?')){ await db.from('users').delete().eq('id',id); showAlert('Deleted','success'); await loadData(); } }
+async function saveClass(){
+  const name = document.getElementById('className').value.trim(); if(!name) return showAlert('Enter class name','error');
+  if(classesData.some(c=>c.class_name.toLowerCase()===name.toLowerCase())) return showAlert('Class already exist','error');
+  await db.from('classes').insert({class_name:name}); showAlert('Saved','success'); closeModal('classModal'); document.getElementById('className').value=''; await loadData();
+}
+async function deleteClass(id){ if(confirm('Delete?')){ await db.from('classes').delete().eq('id',id); showAlert('Deleted','success'); await loadData(); } }
+async function saveSubject(){
+  const name = document.getElementById('newSubjectName').value.trim(); if(!name) return showAlert('Enter subject name','error');
+  if(subjectsData.some(s=>s.subject_name.toLowerCase()===name.toLowerCase())) return showAlert('Subject already exist','error');
+  await db.from('subjects').insert({subject_name:name}); showAlert('Saved','success'); document.getElementById('newSubjectName').value=''; await loadData();
+}
+async function deleteSubject(id){ if(confirm('Delete?')){ await db.from('subjects').delete().eq('id',id); showAlert('Deleted','success'); await loadData(); } }
+async function saveStudent(){
+  const name = document.getElementById('studentName').value.trim();
+  const admission_no = document.getElementById('studentAdmission').value.trim();
+  const classId = document.getElementById('studentClass').value;
+  if(!name || !admission_no || classId==='Select Class') return showAlert('Fill all - Name, Admission No and Class','error');
+  const cls = classesData.find(c=>c.id==classId);
+  if(studentsData.some(s=>s.student_name.toLowerCase()===name.toLowerCase() && s.class_id==classId)) return showAlert('Student name already exist in the class','error');
+  if(studentsData.some(s=>(s.admission_no||'').toLowerCase()===admission_no.toLowerCase())) return showAlert('Admission No already exist','error');
+  const {error} = await db.from('students').insert({student_name:name, admission_no:admission_no, class_id:classId, class_name:cls.class_name});
+  if(error) return showAlert(error.message,'error');
+  showAlert('Saved','success'); closeModal('studentModal'); document.getElementById('studentName').value=''; document.getElementById('studentAdmission').value=''; await loadData();
+}
+async function deleteStudent(id){ if(confirm('Delete?')){ await db.from('students').delete().eq('id',id); showAlert('Deleted','success'); await loadData(); } }
+async function saveTeacher(){
+  const name = document.getElementById('teacherName').value.trim(); const code = document.getElementById('teacherCode').value.trim();
+  if(!name || !code) return showAlert('Fill all','error');
+  const {data: existing} = await db.from('teachers').select('*');
+  if(existing.some(t=>t.teacher_name.toLowerCase()===name.toLowerCase())) return showAlert('Teacher name already exist','error');
+  if(existing.some(t=>t.teacher_code.toLowerCase()===code.toLowerCase())) return showAlert('Teacher code already exist','error');
+  const {error} = await db.from('teachers').insert({teacher_name:name, teacher_code:code});
+  if(error) return showAlert(error.message,'error');
+  showAlert('Saved','success'); closeModal('teacherModal'); document.getElementById('teacherName').value=''; document.getElementById('teacherCode').value=''; await loadData();
+}
+async function assignSubjectToTeacher(){
+  const tCode = document.getElementById('assignTeacherSelect').value; const cId = document.getElementById('assignTeacherClass').value; const sId = document.getElementById('assignTeacherSubject').value;
+  if(tCode==='Select Teacher' || cId==='Select Class' || sId==='Select Subject') return showAlert('Select all','error');
+  const t = teachersData.find(x=>x.teacher_code==tCode); const c = classesData.find(x=>x.id==cId); const s = subjectsData.find(x=>x.id==sId);
+  const {data: existing} = await db.from('teacher_subjects').select('*').eq('teacher_code',tCode).eq('class_id',cId).eq('subject_id',sId);
+  if(existing.length>0) return showAlert('Subject already assigned','error');
+  const {error} = await db.from('teacher_subjects').insert({teacher_id:tCode, teacher_name:t.teacher_name, teacher_code:t.teacher_code, class_id:cId, class_name:c.class_name, subject_id:sId, subject_name:s.subject_name});
+  if(error) return showAlert(error.message,'error');
+  showAlert('Assigned Successfully','success'); closeModal('assignTeacherModal'); loadTeachers();
+}
+    function loadDropdowns(){
+  let teacherOptions = teachersData.map(t=>`<option value="${t.teacher_code}">${t.teacher_name}</option>`).join('');
+  let classOptions = classesData.map(c=>`<option value="${c.id}">${c.class_name}</option>`).join('');
+  let subjectOptions = subjectsData.map(s=>`<option value="${s.id}">${s.subject_name}</option>`).join('');
+  if(document.getElementById('assignTeacherSelect')) document.getElementById('assignTeacherSelect').innerHTML = '<option>Select Teacher</option>' + teacherOptions;
+  if(document.getElementById('assignTeacherClass')) document.getElementById('assignTeacherClass').innerHTML = '<option>Select Class</option>' + classOptions;
+  if(document.getElementById('assignTeacherSubject')) document.getElementById('assignTeacherSubject').innerHTML = '<option>Select Subject</option>' + subjectOptions;
+  if(document.getElementById('csClass')) document.getElementById('csClass').innerHTML = '<option>Select Class</option>' + classOptions;
+  if(document.getElementById('csSubject')) document.getElementById('csSubject').innerHTML = '<option>Select Subject</option>' + subjectOptions;
+}
+async function loadTeachers(){
+  const {data: teacherSubjects} = await db.from('teacher_subjects').select('*');
+  if(!teacherSubjects || teacherSubjects.length===0){ document.getElementById('teacherList').innerHTML = '<tr><td colspan="6">No teachers assigned</td></tr>'; return; }
+  let grouped = {};
+  teacherSubjects.forEach(ts=>{ let key = ts.teacher_name + '|' + ts.teacher_code; if(!grouped[key]) grouped[key]={name:ts.teacher_name, code:ts.teacher_code, classes:[], subjects:[]}; if(ts.class_name && !grouped[key].classes.includes(ts.class_name)) grouped[key].classes.push(ts.class_name); if(ts.subject_name && !grouped[key].subjects.includes(ts.subject_name)) grouped[key].subjects.push(ts.subject_name); });
+  let html = Object.values(grouped).map((t,i)=>{ let classHtml = t.classes.map(c=>`<span>${c}</span>`).join(''); let subjectHtml = t.subjects.map(s=>`<span>${s}</span>`).join(''); return `<tr><td>${i+1}</td><td>${t.name}</td><td>${t.code}</td><td class="class-cell">${classHtml}</td><td class="subject-cell">${subjectHtml}</td><td><button class="btn-sm btn-del" onclick="deleteTeacherAssignments('${t.code}')">Delete</button></td></tr>` }).join('');
+  document.getElementById('teacherList').innerHTML = html;
+}
+async function deleteTeacherAssignments(code){ if(confirm('Delete all assignments for this teacher?')){ await db.from('teacher_subjects').delete().eq('teacher_code',code); showAlert('Deleted','success'); await loadTeachers(); } }
+async function loadClassSubjectsAssign(){
+  const {data:cs} = await db.from('class_subjects').select('*');
+  document.getElementById('csTable').innerHTML = cs.map((c,i)=>`<tr><td>${i+1}</td><td>${c.class_name}</td><td>${c.subject_name}</td><td><button class="btn-sm btn-del" onclick="delCS(${c.id})">Delete</button></td></tr>`).join('') || '<tr><td colspan="4">No data</td></tr>';
+}
+async function delCS(id){ await db.from('class_subjects').delete().eq('id',id); loadClassSubjectsAssign(); }
+async function saveClassSubject(){
+  const cId = document.getElementById('csClass').value; const sId = document.getElementById('csSubject').value;
+  if(cId==='Select Class' || sId==='Select Subject') return showAlert('Select both','error');
+  const c = classesData.find(x=>x.id==cId); const s = subjectsData.find(x=>x.id==sId);
+  const {data: existing} = await db.from('class_subjects').select('*').eq('class_id',cId).eq('subject_id',sId);
+  if(existing.length>0) return showAlert('Subject already assigned to this class','error');
+  await db.from('class_subjects').insert({class_id:cId, class_name:c.class_name, subject_id:sId, subject_name:s.subject_name});
+  showAlert('Assigned Successfully','success'); document.getElementById('csClass').value='Select Class'; document.getElementById('csSubject').value='Select Subject'; loadClassSubjectsAssign();
+}
+async function viewTeacherSubject(){
+  const code = document.getElementById('selectTeacherFilter').value; if(code==='Select Teacher') return;
+  const {data: ts} = await db.from('teacher_subjects').select('*').eq('teacher_code',code);
+  document.getElementById('teacherSubjectList').innerHTML = ts.map((t,i)=>`<tr><td>${i+1}</td><td>${t.class_name}</td><td>${t.subject_name}</td></tr>`).join('') || '<tr><td colspan="3">No subject assigned</td></tr>';
+}
+async function viewClassStudents(){
+  const classId = document.getElementById('studentClassFilter').value; if(classId==='Select Class') return;
+  const filtered = studentsData.filter(s=>s.class_id==classId);
+  document.getElementById('classStudentList').innerHTML = filtered.map((s,i)=>`<tr><td>${i+1}</td><td><b>${s.admission_no || '-'}</b></td><td>${s.student_name}</td><td><button class="btn-sm btn-update" onclick="editStudent(${s.id})">Update</button><button class="btn-sm btn-del" onclick="deleteStudent(${s.id})">Delete</button></td></tr>`).join('') || '<tr><td colspan="4">No students</td></tr>';
+}
+function editStudent(id){
+  editStudentId = id; const s = studentsData.find(x=>x.id==id);
+  document.getElementById('editStudentNameInput').value = s.student_name;
+  document.getElementById('editStudentAdmissionInput').value = s.admission_no || '';
+  openModal('editStudentModal');
+}
+async function saveEditedStudent(){
+  const newName = document.getElementById('editStudentNameInput').value.trim();
+  const newAdmission = document.getElementById('editStudentAdmissionInput').value.trim();
+  if(!newName) return showAlert('Please enter a name','error');
+  if(!newAdmission) return showAlert('Please enter Admission No','error');
+  const {error} = await db.from('students').update({student_name:newName, admission_no:newAdmission}).eq('id',editStudentId);
+  if(error) return showAlert(error.message,'error');
+  showAlert('Student Updated Successfully','success'); closeModal('editStudentModal'); await loadData(); viewClassStudents();
+}
+document.querySelectorAll('.modal').forEach(modal=>{ modal.addEventListener('click',(e)=>{ if(e.target===modal) closeModal(modal.id); }); });
+async function loadData(){
+  const {data: classes} = await db.from('classes').select('*');
+  const {data: subjects} = await db.from('subjects').select('*');
+  const {data: teachers} = await db.from('teachers').select('*');
+  const {data: students} = await db.from('students').select('*');
+  const {data: users} = await db.from('users').select('*');
+  const {data: sessions} = await db.from('sessions').select('*');
+  const {data: terms} = await db.from('terms').select('*');
+  classesData = classes || []; subjectsData = subjects || []; teachersData = teachers || [];
+  studentsData = students || []; usersData = users || []; sessionsData = sessions || []; termsData = terms || [];
+  document.getElementById('totalStudents').innerText = studentsData.length;
+  document.getElementById('totalTeachers').innerText = teachersData.length;
+  document.getElementById('totalClasses').innerText = classesData.length;
+  const { data: subjData } = await db.from("subjects").select("subject_name");
+  const totalSubjects = new Set((subjData || []).map(s => (s.subject_name || "").trim().toLowerCase())).size;
+  document.getElementById("totalSubjects").textContent = totalSubjects;
+  document.getElementById('totalAdmins').innerText = usersData.filter(u=>u.role==='Admin').length;
+  let userHtml = usersData.map((u,i)=>{ let photoHtml = u.photo ? `<div class="user-photo"><img src="${u.photo}"></div>` : `<div class="user-photo"><i class="fa-solid fa-user"></i></div>`; return `<tr><td>${i+1}</td><td>${photoHtml}</td><td>${u.name}</td><td>${u.email}</td><td>${u.mobile}</td><td>${u.role}</td><td><button class="btn-sm btn-update" onclick="editUser(${u.id})">Update</button> <button class="btn-sm btn-del" onclick="deleteUser(${u.id})">Delete</button></td></tr>` }).join('') || '<tr><td colspan="7">No users yet</td></tr>';
+  document.getElementById('userTable').innerHTML = userHtml;
+  document.getElementById('classList').innerHTML = classesData.map((c,i)=>`<tr><td>${i+1}</td><td>${c.class_name}</td><td><button class="btn-sm btn-del" onclick="deleteClass(${c.id})">Delete</button></td></tr>`).join('') || '<tr><td colspan="3">No classes</td></tr>';
+  document.getElementById('subjectList').innerHTML = subjectsData.map((s,i)=>`<tr><td>${i+1}</td><td>${s.subject_name}</td><td><button class="btn-sm btn-del" onclick="deleteSubject(${s.id})">Delete</button></td></tr>`).join('') || '<tr><td colspan="3">No subjects</td></tr>';
+  document.getElementById('allTeachersList').innerHTML = teachersData.map((t,i)=>`<tr><td>${i+1}</td><td>${t.teacher_name}</td><td>${t.teacher_code}</td></tr>`).join('') || '<tr><td colspan="3">No teachers</td></tr>';
+  let classOptions = classesData.map(c=>`<option value="${c.id}">${c.class_name}</option>`).join('');
+  if(document.getElementById('studentClass')) document.getElementById('studentClass').innerHTML = '<option>Select Class</option>' + classOptions;
+  if(document.getElementById('studentClassFilter')) document.getElementById('studentClassFilter').innerHTML = '<option>Select Class</option>' + classOptions;
+  document.getElementById('studentList').innerHTML = studentsData.map((s,i)=>`<tr><td>${i+1}</td><td>${s.student_name}</td><td><b>${s.admission_no || '-'}</b></td><td>${s.class_name}</td><td><button class="btn-sm btn-del" onclick="deleteStudent(${s.id})">Delete</button></td></tr>`).join('') || '<tr><td colspan="5">No students</td></tr>';
+  let teacherCodeOptions = teachersData.map(t=>`<option value="${t.teacher_code}">${t.teacher_name}</option>`).join('');
+  if(document.getElementById('selectTeacherFilter')) document.getElementById('selectTeacherFilter').innerHTML = '<option>Select Teacher</option>' + teacherCodeOptions;
+  let sessionHtml = sessionsData.map((s,i)=>`<p>${i+1}. ${s.session_name}</p>`).join('') || '<p>No session added</p>';
+  let termHtml = termsData.map((t,i)=>`<p>${i+1}. ${t.term_name}</p>`).join('') || '<p>No term added</p>';
+  if(document.getElementById('sessionList')) document.getElementById('sessionList').innerHTML = sessionHtml;
+  if(document.getElementById('termList')) document.getElementById('termList').innerHTML = termHtml;
+  loadTeachers(); loadDropdowns(); loadClassSubjectsAssign();
+}
+async function addSession(){
+  const name = document.getElementById('newSession').value.trim(); if(!name) return showAlert('Enter session','error');
+  if(sessionsData.some(s=>s.session_name.toLowerCase()===name.toLowerCase())) return showAlert('Session already exist','error');
+  await db.from('sessions').insert({session_name:name}); document.getElementById('newSession').value=''; showAlert('Session Added','success'); loadData();
+}
+async function addTerm(){
+  const name = document.getElementById('newTerm').value.trim(); if(!name) return showAlert('Enter term','error');
+  if(termsData.some(t=>t.term_name.toLowerCase()===name.toLowerCase())) return showAlert('Term already exist','error');
+  await db.from('terms').insert({term_name:name}); document.getElementById('newTerm').value=''; showAlert('Term Added','success'); loadData();
+}
+function loadReg(){}
+window.addEventListener('load', async function(){
+  document.body.style.visibility = 'visible';
+  try{ await checkSubscription(); }catch(e){ document.body.style.visibility='visible'; await loadData(); }
+});
+</script>
+</body>
+</html>

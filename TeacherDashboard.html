@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teacher Dashboard - Standard Ummul Qura'an Academy, Sokoto</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --navy:#0b2a5b; --navy-deep:#071c3f; --navy-hi:#143a78; --navy-lo:#041433;
+  --gold:#d9a526;
+  --soft:#ece8dc; --soft-hi:#ffffff; --soft-lo:#c9c3b0;
+  --ink:#1b2430; --muted:#66707d;
+}
+*{ margin:0; padding:0; box-sizing:border-box; font-family:'Poppins','Segoe UI',Arial,sans-serif; }
+body{ background:var(--soft); color:var(--ink); font-size:14px; }
+
+/* Navy block: navbar + sidebar */
+.navbar{ background:var(--navy); color:#fff; padding:12px 15px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:1000; border-bottom:4px solid var(--gold); }
+.navbar .left{ display:flex; align-items:center; gap:10px; }
+.navbar .hamburger{ width:36px; height:36px; display:flex; align-items:center; justify-content:center; font-size:18px; cursor:pointer; border-radius:10px; background:var(--navy); box-shadow:3px 3px 7px var(--navy-lo),-3px -3px 7px var(--navy-hi); }
+.navbar .hamburger:active{ box-shadow:inset 2px 2px 5px var(--navy-lo),inset -2px -2px 5px var(--navy-hi); }
+.navbar h3{ font-size:16px; font-weight:600; }
+.profile{ font-size:12px; font-weight:600; color:#c9d6ee; }
+.container{ display:flex; min-height:100vh; position:relative; }
+.sidebar{ width:240px; background:var(--navy); color:#fff; padding:15px 15px 80px 15px; transition:transform .3s ease; position:fixed; left:0; top:52px; height:calc(100% - 52px); z-index:999; transform:translateX(-100%); overflow-y:auto; border-right:4px solid var(--gold); }
+.sidebar.active{ transform:translateX(0); box-shadow:2px 0 15px rgba(0,0,0,.3); }
+.logo{ font-size:14px; font-weight:700; margin-bottom:20px; text-align:center; line-height:1.4; }
+.menu{ list-style:none; }
+.menu li{ margin-bottom:12px; }
+.menu a{ text-decoration:none; color:#fff; display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:12px; cursor:pointer; white-space:nowrap; font-size:13px; font-weight:500; background:var(--navy); box-shadow:4px 4px 9px var(--navy-lo),-4px -4px 9px var(--navy-hi); }
+.menu a:hover{ color:var(--gold); }
+.menu a.active{ color:var(--gold); box-shadow:inset 3px 3px 7px var(--navy-lo),inset -3px -3px 7px var(--navy-hi); }
+.menu a i{ width:18px; }
+
+/* Ivory block: content */
+.main{ flex:1; padding:18px 15px; min-width:0; }
+.topbar{ background:var(--soft); padding:15px 18px; border-radius:18px; box-shadow:7px 7px 15px var(--soft-lo),-7px -7px 15px var(--soft-hi); display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+.topbar h2{ color:var(--navy); font-size:18px; font-weight:700; }
+.content{ background:var(--soft); border-radius:22px; box-shadow:9px 9px 20px var(--soft-lo),-9px -9px 20px var(--soft-hi); min-height:calc(100vh - 170px); padding:0; overflow:hidden; }
+.section-title{ font-size:16px; font-weight:600; margin-bottom:15px; padding:18px 18px 0 18px; color:var(--navy); }
+.content table{ width:calc(100% - 36px); margin:0 18px 18px; border-collapse:separate; border-spacing:0; font-size:12px; border-radius:14px; overflow:hidden; box-shadow:inset 4px 4px 9px var(--soft-lo),inset -4px -4px 9px var(--soft-hi); }
+table th{ background:var(--navy); color:#fff; padding:10px; text-align:left; font-weight:600; }
+table td{ padding:10px; border-bottom:1px solid var(--soft-lo); }
+.overlay{ display:none; position:fixed; top:52px; left:0; width:100%; height:calc(100% - 52px); background:rgba(4,20,51,.55); z-index:998; opacity:0; transition:opacity .3s ease; }
+.overlay.active{ display:block; opacity:1; }
+iframe{ width:100%; height:800px; min-height:600px; border:none; display:block; background:var(--soft); }
+@media(min-width:992px){ .main{ padding:22px 28px; } }
+</style>
+</head>
+<body>
+<div class="navbar">
+    <div class="left">
+        <div class="hamburger" onclick="toggleSidebar()"><i class="fas fa-bars"></i></div>
+        <h3>UMMUL QURA'AN</h3>
+    </div>
+    <div class="profile" id="teacherName">Welcome Teacher</div>
+</div>
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+<div class="container">
+    <div class="sidebar" id="sidebar">
+        <div class="logo"><br>TEACHER MENU</div>
+        <ul class="menu">
+            <li><a onclick="showDashboard(this)"><i class="fas fa-home"></i> Dashboard</a></li>
+            <li><a onclick="openPage(this, 'Teacher-MarkSheet.html')"><i class="fas fa-edit"></i> Enter Marks</a></li>
+            <li><a onclick="openPage(this, 'Teacher-SaveMarks.html')"><i class="fas fa-save"></i> View Saved Marks</a></li>
+            <li><a onclick="openPage(this, 'TeacherComment.html')"><i class="fas fa-calendar-check"></i> Form Master's Comment</a></li>
+            <li><a onclick="openPage(this, 'TeacherClassRegister.html')"><i class="fas fa-chalkboard"></i> Class Register</a></li>
+            <li><a onclick="openPage(this, 'TeacherClassSubjects.html')"><i class="fas fa-book"></i> Class Register Subject</a></li>
+            <li><a onclick="openPage(this, 'TeacherClassStudents.html')"><i class="fas fa-users"></i> Class Register Students</a></li>
+            <li><a onclick="openPage(this, 'ReportSheet.html')"><i class="fas fa-chart-bar"></i> Report Sheet</a></li>
+            <li><a onclick="openPage(this, 'BroadSheet_Teacher.html')"><i class="fas fa-chart-bar"></i> BroadSheet</a></li>
+            <li><a onclick="openPage(this, 'Teacher-Overall.html')"><i class="fas fa-chart-pie"></i> Overall Marks</a></li>
+            <li><a onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+        </ul>
+    </div>
+    <div class="main" id="mainContent">
+        <div class="topbar"><h2 id="pageTitle">Teacher Dashboard Overview</h2></div>
+        <div class="content" id="contentArea">
+            <h3 class="section-title">Assigned Subjects</h3>
+            <table>
+                <thead><tr><th>S/N</th><th>CLASS ASSIGNED</th><th>SUBJECT ASSIGNED</th></tr></thead>
+                <tbody id="assignedTable"><tr><td colspan="3">Loading...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script>
+const SUPABASE_URL = 'https://iokjzbiludjthrqrehxp.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlva2p6YmlsdWRqdGhycXJlaHhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ1OTA0NzIsImV4cCI6MjExMDE2NjQ3Mn0.CFuJS7TGjtt2U_UESu3j9vzpdm6jAKadabFsYUUc8gw';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const LOGIN_VERSION = "3";
+if(localStorage.getItem('login_version') !== LOGIN_VERSION){
+  localStorage.clear();
+  localStorage.setItem('login_version', LOGIN_VERSION);
+  window.location.href = 'index.html';
+}
+let CURRENT_TERM = ""; let AMOUNT_PER_STUDENT = 100;
+let BANK_NAME = "Access Bank"; let ACCOUNT_NAME = "Standard Ummul Qura'an Academy, Sokoto"; let ACCOUNT_NO = "0123456789";
+const userRole = localStorage.getItem('userRole');
+// FIX 1: Super Admin key must match login page
+const isSuper = localStorage.getItem('isSuperUmmul');
+
+async function getSettings(){
+    try{
+      // FIX 2: Must read ummul_app_settings - same table Super Admin locks
+      let {data} = await db.from('ummul_app_settings').select('*').eq('id',1).single();
+      if(data){
+          CURRENT_TERM=data.current_term || "";
+          AMOUNT_PER_STUDENT=data.amount_per_student || 100;
+          BANK_NAME=data.bank_name || BANK_NAME; ACCOUNT_NAME=data.account_name || ACCOUNT_NAME; ACCOUNT_NO=data.account_no || ACCOUNT_NO;
+          return data.trial_active !== false;
+      }
+    }catch(e){ console.log('settings error', e); }
+    return true;
+}
+async function checkSubscription(){
+    const trialActive = await getSettings();
+    if(isSuper === 'true'){ document.body.style.visibility = 'visible'; return; }
+    if(userRole!== 'Admin' && userRole!== 'Teacher'){ document.body.style.visibility = 'visible'; return; }
+    if(trialActive === true){ document.body.style.visibility = 'visible'; return; }
+    // FIX 3: Must read ummul_subscriptions - same table Super Admin approves
+    let {data: sub} = await db.from('ummul_subscriptions').select('*').eq('term', CURRENT_TERM).eq('status', 'paid').maybeSingle();
+    if(sub){ document.body.style.visibility = 'visible'; return; }
+    let {count} = await db.from('students').select('*', {count:'exact'});
+    let amount = (count || 0) * AMOUNT_PER_STUDENT;
+    document.body.style.overflow = 'hidden';
+    const NV='#0b2a5b', GD='#d9a526', SF='#ece8dc', LO='#c9c3b0', HI='#ffffff';
+    const inset = `box-shadow:inset 4px 4px 9px ${LO}, inset -4px -4px 9px ${HI};`;
+    document.body.insertAdjacentHTML('beforeend', `
+    <div style="position:fixed; top:0; left:0; width:100%; height:100%; background:${NV}; z-index:9999; display:flex; align-items:flex-start; justify-content:center; padding:20px; font-family:'Poppins', sans-serif; overflow-y:auto;">
+        <div style="max-width:480px; width:100%; background:${SF}; padding:35px 30px; border-radius:26px; box-shadow:10px 10px 22px #041433, -10px -10px 22px #143a78; text-align:center; border-top:5px solid ${GD}; margin:20px 0;">
+            <div style="width:64px; height:64px; background:${SF}; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 15px; box-shadow:6px 6px 12px ${LO}, -6px -6px 12px ${HI};">
+                <i class="fa-solid fa-lock" style="font-size:26px; color:${NV};"></i>
+            </div>
+            <h2 style="color:${NV}; margin-bottom:8px; font-size:24px; font-weight:700;">Dashboard Locked</h2>
+            <p style="color:#66707d; font-size:14px; margin-bottom:20px;">Free Trial Ended. Admin must subscribe to unlock Admin & Teacher Dashboard</p>
+            <div style="padding:18px; border-radius:16px; margin-bottom:20px; text-align:left; ${inset}">
+                <p style="margin:6px 0; font-size:14px; color:#1b2430;"><b style="color:${NV};">Term:</b> ${CURRENT_TERM}</p>
+                <p style="margin:6px 0; font-size:14px; color:#1b2430;"><b style="color:${NV};">Total Students:</b> ${count}</p>
+                <p style="margin:6px 0; font-size:14px; color:#1b2430;"><b style="color:${NV};">Rate:</b> ₦${AMOUNT_PER_STUDENT.toLocaleString()} per student</p>
+            </div>
+            <div style="padding:18px; border-radius:16px; margin-bottom:20px; box-shadow:6px 6px 12px ${LO}, -6px -6px 12px ${HI};">
+                <h3 style="margin:0; color:${NV}; font-size:22px; font-weight:700;">Total: ₦${amount.toLocaleString()}</h3>
+            </div>
+            <div style="padding:15px; border-radius:14px; margin-bottom:20px; text-align:left; border-left:3px solid ${GD}; ${inset}">
+                <p style="margin:4px 0; font-size:13px; color:#1b2430;"><b style="color:${NV};">Bank:</b> ${BANK_NAME}</p>
+                <p style="margin:4px 0; font-size:13px; color:#1b2430;"><b style="color:${NV};">Account Name:</b> ${ACCOUNT_NAME}</p>
+                <p style="margin:4px 0; font-size:13px; color:#1b2430;"><b style="color:${NV};">Account No:</b> ${ACCOUNT_NO}</p>
+            </div>
+            <p style="color:#9b1c1c; font-size:12px; font-weight:600; margin:15px 0;">⚠️ Only Admin pays. Teacher access is automatic after payment</p>
+            <div style="text-align:left; margin-bottom:15px;">
+                <label style="font-size:12px; color:#1b2430; font-weight:600; display:block; margin-bottom:6px;">Upload Payment Proof</label>
+                <input type="file" id="proof" accept="image/*,.pdf" style="width:100%; padding:10px; border:none; border-radius:12px; background:${SF}; font-size:13px; ${inset}">
+            </div>
+            <div style="text-align:left; margin-bottom:20px;">
+                <label style="font-size:12px; color:#1b2430; font-weight:600; display:block; margin-bottom:6px;">Teller No / Transaction Ref</label>
+                <input type="text" id="note" placeholder="Enter transaction reference" style="width:100%; padding:13px 16px; border:none; border-radius:14px; background:${SF}; font-size:14px; color:#1b2430; ${inset}">
+            </div>
+            <button onclick="submitProof(${count}, ${amount})" style="background:${NV}; color:#fff; padding:14px 20px; border:none; border-bottom:4px solid ${GD}; border-radius:14px; width:100%; cursor:pointer; font-size:15px; font-weight:700; margin-bottom:12px; box-shadow:6px 6px 12px ${LO}, -6px -6px 12px ${HI};">Submit Proof</button>
+            <button onclick="logout()" style="background:${SF}; color:#9b1c1c; padding:12px 20px; border:none; border-radius:14px; width:100%; cursor:pointer; font-size:14px; font-weight:600; box-shadow:6px 6px 12px ${LO}, -6px -6px 12px ${HI};">Logout</button>
+        </div>
+    </div>`);
+}
+async function submitProof(count, amount){
+    const file = document.getElementById('proof').files[0]; const note = document.getElementById('note').value;
+    if(!file ||!note) return alert('Upload proof and enter teller no');
+    const {data: upload, error: upErr} = await db.storage.from('payment-proofs').upload(`term_${CURRENT_TERM}/${Date.now()}_${file.name}`, file);
+    if(upErr) return alert(upErr.message);
+    const proofUrl = db.storage.from('payment-proofs').getPublicUrl(upload.path).data.publicUrl;
+    await db.from('ummul_subscriptions').insert({term: CURRENT_TERM, student_count: count, amount: amount, proof_url: proofUrl, payment_note: note, status: 'pending'});
+    alert('Proof submitted. Wait for approval'); location.reload();
+}
+const teacherCode = localStorage.getItem('teacherCode');
+const teacherName = localStorage.getItem('teacherName');
+document.getElementById('teacherName').innerText = 'Hi, ' + (teacherName || 'Teacher');
+if(!teacherCode && isSuper!== 'true'){
+    alert('Please login first');
+    window.location.href = 'Teacher-Code.html';
+}
+function toggleSidebar(){
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+    document.body.style.overflow = sidebar.classList.contains('active')? 'hidden' : 'auto';
+}
+async function loadAssigned(){
+    const tbodyEl = document.getElementById('assignedTable');
+    if(!tbodyEl) return;
+    if(isSuper === 'true'){
+        let {data} = await db.from('teacher_subjects').select('*').order('teacher_name');
+        if(!data || data.length===0){ tbodyEl.innerHTML = '<tr><td colspan="3">No subjects assigned yet - Super Admin can see all</td></tr>'; return; }
+        tbodyEl.innerHTML = data.map((d,i)=>`<tr><td>${i+1}</td><td>${d.class_name} - ${d.teacher_name}</td><td>${d.subject_name}</td></tr>`).join('');
+        return;
+    }
+    if(!teacherCode) return;
+    let {data, error} = await db.from('teacher_subjects').select('*').eq('teacher_code', teacherCode);
+    if(error){ tbodyEl.innerHTML = '<tr><td colspan="3">Error: '+error.message+'</td></tr>'; return; }
+    if(!data || data.length === 0){
+        tbodyEl.innerHTML = '<tr><td colspan="3">No subjects assigned by Admin</td></tr>';
+    } else {
+        tbodyEl.innerHTML = data.map((d, i) => `<tr><td>${i+1}</td><td>${d.class_name}</td><td>${d.subject_name}</td></tr>`).join('');
+    }
+}
+function openPage(el, page){
+    document.querySelectorAll('.menu a').forEach(a => a.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('pageTitle').innerText = el.innerText.trim();
+    document.getElementById('contentArea').innerHTML = `<iframe src="./${page}"></iframe>`;
+    if(window.innerWidth < 992) toggleSidebar();
+}
+function showDashboard(el){
+    document.querySelectorAll('.menu a').forEach(a => a.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('pageTitle').innerText = 'Dashboard Overview';
+    document.getElementById('contentArea').innerHTML = `
+        <h3 class="section-title">Assigned Subjects</h3>
+        <table>
+            <thead><tr><th>S/N</th><th>CLASS ASSIGNED</th><th>SUBJECT ASSIGNED</th></tr></thead>
+            <tbody id="assignedTable"><tr><td colspan="3">Loading...</td></tr></tbody>
+        </table>
+    `;
+    loadAssigned();
+}
+function logout(){
+    localStorage.clear();
+    localStorage.setItem('login_version', '3');
+    window.location.href = 'Teacher-Code.html';
+}
+document.addEventListener('DOMContentLoaded', async () => {
+    await checkSubscription();
+    document.body.style.visibility = 'visible';
+    loadAssigned();
+    const first = document.querySelector('.menu a');
+    if(first) first.classList.add('active');
+});
+</script>
+</body>
+</html>

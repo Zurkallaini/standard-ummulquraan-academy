@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Class Register Students</title>
+<style>
+:root{--navy:#0b2a5b;--gold:#d9a526;--ivory:#fbf7ec;--line:#e3dcc8;--ink:#1b2430;--muted:#66707d}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial}
+body{background:var(--ivory);color:var(--ink);padding:15px;min-height:100vh}
+.card{background:white;border:1px solid var(--line);border-radius:20px;padding:25px;box-shadow:0 10px 30px rgba(11,42,91,.12)}
+.header h2{color:var(--navy);font-size:22px;margin-bottom:15px;padding-bottom:12px;border-bottom:3px solid var(--gold)}
+.class-badge{background:var(--navy);color:white;padding:8px 15px;border-radius:20px;font-weight:600;display:inline-block;margin-bottom:15px;border-bottom:3px solid var(--gold)}
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:12px}
+.table-scroll::-webkit-scrollbar{height:8px}
+.table-scroll::-webkit-scrollbar-thumb{background:var(--navy);border-radius:99px}
+table{width:100%;min-width:600px;border-collapse:collapse}
+thead{background:var(--navy);color:white}
+th{padding:14px 10px;text-align:left;font-weight:600;white-space:nowrap}
+td{padding:14px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+tbody tr:nth-child(even){background:var(--ivory)}
+tr:hover td{background:#f6edd0}
+.student-count{color:var(--muted);font-size:14px;margin-bottom:10px}
+.slide-hint{font-size:11px;color:var(--muted);text-align:right;margin-bottom:6px}
+.slide-hint::after{content:" → Swipe to see more"}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body>
+<div class="card">
+    <div class="header"><h2>👨‍🎓 My Class Students</h2></div>
+    <div id="className"></div>
+    <div id="studentCount" class="student-count"></div>
+    <div class="slide-hint">Slide table</div>
+    <div class="table-scroll">
+    <table><thead><tr><th style="width:60px">S/N</th><th>STUDENT NAME</th><th>ADMISSION NO</th></tr></thead><tbody id="studentList"></tbody></table>
+    </div>
+</div>
+<script>
+const db = supabase.createClient('https://iokjzbiludjthrqrehxp.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlva2p6YmlsdWRqdGhycXJlaHhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ1OTA0NzIsImV4cCI6MjExMDE2NjQ3Mn0.CFuJS7TGjtt2U_UESu3j9vzpdm6jAKadabFsYUUc8gw')
+const tCode = localStorage.getItem('teacherCode');
+const teacherName = localStorage.getItem('teacherName');
+
+async function load(){
+    if(!tCode) return document.getElementById('className').innerText = 'Please login first';
+    
+    let {data: teacher} = await db.from('teachers').select('*').eq('teacher_code', tCode).maybeSingle();
+    let teacherId = teacher ? teacher.id : null;
+    let {data: myClass} = await db.from('class_registers').select('*').eq('teacher_id', teacherId).maybeSingle();
+    if(!myClass && tCode){ let r = await db.from('class_registers').select('*').eq('teacher_code', tCode).maybeSingle(); myClass = r.data; }
+    if(!myClass && teacherName){ let r = await db.from('class_registers').select('*').eq('teacher_name', teacherName).maybeSingle(); myClass = r.data; }
+    if(!myClass) return document.getElementById('className').innerText = 'No class assigned to you as Class Teacher';
+    
+    document.getElementById('className').innerHTML = `<span class="class-badge">Class: ${myClass.class_name}</span>`;
+    
+    let {data: students} = await db.from('students').select('*').eq('class_id', myClass.class_id).order('student_name');
+    
+    document.getElementById('studentCount').innerText = `Total: ${(students||[]).length} Students`;
+    
+    document.getElementById('studentList').innerHTML = (students||[]).map((s,i)=>`
+        <tr><td>${i+1}</td><td>${s.student_name}</td><td><b>${s.admission_no||'-'}</b></td></tr>
+    `).join('');
+}
+load();
+</script></body></html>

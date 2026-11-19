@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Year BroadSheet - Teacher - Ummul Qura'an Academy</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.js"></script>
+<style>
+:root{
+  --navy:#0b2a5b; --navy-deep:#071c3f; --gold:#d9a526; --green:#2f6b3a;
+  --ivory:#fbf7ec; --line:#e3dcc8; --ink:#1b2430; --muted:#66707d;
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI,sans-serif;}
+body{background:var(--ivory);color:var(--ink);padding:20px;}
+.container{max-width:1200px;margin:auto;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(11,42,91,.1);}
+.school-header{background:var(--navy);color:#fff;text-align:center;padding:25px;border-bottom:5px solid var(--gold);}
+.school-header h1{font-size:28px;font-weight:700;}
+.school-header p{font-size:18px;margin-top:5px;color:#c9d6ee;}
+.content{padding:20px;}
+.page-title{text-align:center;color:var(--navy);font-size:32px;font-weight:bold;margin-bottom:20px;}
+.stats-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px;margin-bottom:20px;}
+.card{background:#fff;border:1px solid var(--line);border-left:6px solid var(--gold);border-radius:10px;padding:20px;}
+.card h3{color:var(--muted);font-size:15px;margin-bottom:10px;}
+.count{font-size:28px;font-weight:bold;color:var(--navy);}
+.top-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+select,button{padding:12px;border-radius:6px;border:1.5px solid var(--line);font-size:14px;}
+select{background:var(--ivory);color:var(--ink);}
+select:focus{outline:none;border-color:var(--gold);}
+button{background:var(--green);color:#fff;border:none;cursor:pointer;font-weight:600;}
+button:hover{background:#245430;}
+.table-wrapper{overflow-x:auto;border:1px solid var(--line);border-radius:10px;}
+table{width:100%;border-collapse:collapse;min-width:900px;}
+th{background:var(--navy);color:#fff;padding:12px;text-align:center;font-weight:900;border:1.5px solid #000}
+td{padding:10px;border:1.5px solid #000;text-align:center;font-weight:900;color:#000;background:#fff;font-size:14px}
+tbody tr:nth-child(even) td{background:var(--ivory);}
+td:nth-child(2){text-align:left;}
+.pass{color:green;font-weight:900;}
+.fail{color:red;font-weight:900;}
+.loading{color:#666;font-style:italic;text-align:center;}
+.info{padding:12px;background:#f6edd0;color:var(--navy);border-left:4px solid var(--gold);border-radius:6px;margin-bottom:15px;font-size:14px;font-weight:600;}
+.error-box{padding:30px;background:#fee2e2;color:#991b1b;border-radius:10px;text-align:center;font-weight:bold;font-size:20px;border:2px dashed #991b1b;}
+@media print{body{padding:0}.top-bar,button,.info{display:none}}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="school-header"><h1>STANDARD UMMUL QURA'AN ACADEMY, SOKOTO</h1><p>YEAR BROADSHEET</p></div>
+<div class="content">
+<h2 class="page-title" id="pageTitle">OVERALL MARKS</h2>
+<div id="infoBox" class="info">Classes assigned to you</div>
+<div id="mainContent">
+<div class="stats-cards">
+<div class="card"><h3>Total Students</h3><div class="count" id="totalStudents">0</div></div>
+<div class="card"><h3>Class Average</h3><div class="count" id="yearAverage">0.00</div></div>
+<div class="card"><h3>Total Pass</h3><div class="count" id="totalPass" style="color:green;">0</div></div>
+<div class="card"><h3>Total Fail</h3><div class="count" id="totalFail" style="color:red;">0</div></div>
+</div>
+<div class="top-bar">
+<select id="classSelect"><option value="">Loading Your Classes...</option></select>
+<select id="sessionSelect"><option>Loading Session...</option></select>
+<button onclick="loadYearResults()">Generate Year Sheet</button>
+<button onclick="window.print()">Print</button>
+</div>
+<div class="table-wrapper">
+<table>
+<thead><tr><th>S/N</th><th>STUDENT NAME</th><th>1ST TERM</th><th>2ND TERM</th><th>3RD TERM</th><th>YEAR TOTAL</th><th>YEAR AVG</th><th>REMARK</th></tr></thead>
+<tbody id="resultBody"><tr><td colspan="8" class="loading">Select Class And Click Generate</td></tr></tbody>
+</table>
+</div>
+</div>
+<div id="noClassBox" style="display:none;" class="error-box">No Class Register Assigned to you Contact Admin</div>
+</div>
+</div>
+<script>
+const SUPABASE_URL = "https://iokjzbiludjthrqrehxp.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlva2p6YmlsdWRqdGhycXJlaHhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ1OTA0NzIsImV4cCI6MjExMDE2NjQ3Mn0.CFuJS7TGjtt2U_UESu3j9vzpdm6jAKadabFsYUUc8gw";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+window.onload = init;
+async function init(){
+    const teacherCode = localStorage.getItem("teacherCode");
+    const teacherName = localStorage.getItem("teacherName") || "Teacher";
+    if(!teacherCode){
+        document.getElementById("mainContent").style.display = "none";
+        document.getElementById("noClassBox").innerText = "PLEASE LOGIN FROM DASHBOARD FIRST";
+        document.getElementById("noClassBox").style.display = "block";
+        return;
+    }
+    document.getElementById("pageTitle").innerText = `OVERALL MARKS`;
+    await loadSessions();
+    loadTeacherClasses();
+}
+async function loadSessions(){
+ try{
+  const {data:sessions}=await supabaseClient.from("sessions").select("*").order("id");
+  const sel=document.getElementById("sessionSelect");
+  sel.innerHTML='<option value="">Select Session</option>';
+  (sessions||[]).forEach(s=>sel.innerHTML+=`<option value="${s.id}">${s.session_name}</option>`);
+  if(sessions && sessions[0]) sel.value=sessions[0].id;
+ }catch(e){}
+}
+async function loadTeacherClasses(){
+const select = document.getElementById("classSelect");
+const mainContent = document.getElementById("mainContent");
+const noClassBox = document.getElementById("noClassBox");
+const teacherCode = localStorage.getItem('teacherCode');
+const teacherName = localStorage.getItem('teacherName');
+try{
+let classRegs = [];
+const {data:teacher} = await supabaseClient.from("teachers").select("id").eq("teacher_code", teacherCode).maybeSingle();
+if(teacher){ let r = await supabaseClient.from("class_registers").select("class_id").eq("teacher_id", teacher.id); classRegs = r.data||[]; }
+if(!classRegs.length){ let r = await supabaseClient.from("class_registers").select("class_id").eq("teacher_code", teacherCode); classRegs = r.data||[]; }
+if(!classRegs.length && teacherName){ let r = await supabaseClient.from("class_registers").select("class_id").eq("teacher_name", teacherName); classRegs = r.data||[]; }
+if(!classRegs || classRegs.length === 0){
+    mainContent.style.display = "none";
+    noClassBox.style.display = "block";
+    document.getElementById("infoBox").style.display = "none";
+    return;
+}
+const classIds = [...new Set(classRegs.map(r=>r.class_id))];
+const {data:classes}=await supabaseClient.from("classes").select("*").in("id", classIds).order("class_name");
+select.innerHTML = '<option value="">Select Your Class</option>';
+(classes||[]).forEach(c=>{ select.innerHTML += `<option value="${c.id}">${c.class_name}</option>`; });
+if(!classes || classes.length===0){
+    mainContent.style.display = "none";
+    noClassBox.style.display = "block";
+}
+}catch(err){
+select.innerHTML = '<option value="">Error Loading</option>';
+console.error(err);
+}
+}
+async function loadYearResults(){
+const classId = document.getElementById("classSelect").value;
+const sessionId = document.getElementById("sessionSelect").value;
+if(!classId){ alert("Please Select Class First"); return; }
+const body = document.getElementById("resultBody");
+body.innerHTML = '<tr><td colspan="8" class="loading">Loading Results...</td></tr>';
+try{
+const { data: students } = await supabaseClient.from("students").select("*").eq("class_id", classId).order("student_name");
+let q = supabaseClient.from("results").select("*").eq("class_id", classId);
+if(sessionId) q=q.eq("session_id", sessionId);
+const { data: allResults } = await q;
+const { data: terms } = await supabaseClient.from("terms").select("*").order("id");
+if(!students || students.length === 0){
+body.innerHTML = '<tr><td colspan="8">No Students In This Class</td></tr>'; return;
+}
+let termIdToPos = {};
+if(terms){
+ let t1 = terms.find(t=>/1st|first/i.test(t.term_name));
+ let t2 = terms.find(t=>/2nd|second/i.test(t.term_name));
+ let t3 = terms.find(t=>/3rd|third/i.test(t.term_name));
+ if(t1) termIdToPos[t1.id]='first';
+ if(t2) termIdToPos[t2.id]='second';
+ if(t3) termIdToPos[t3.id]='third';
+ if(!t1 && terms[0]) termIdToPos[terms[0].id]='first';
+ if(!t2 && terms[1]) termIdToPos[terms[1].id]='second';
+ if(!t3 && terms[2]) termIdToPos[terms[2].id]='third';
+}
+const studentsMap = {};
+students.forEach(s=>{ studentsMap[s.id] = {name: s.student_name, first: 0, second: 0, third: 0}; });
+(allResults || []).forEach(row=>{
+ const total = Number(row.total) || (Number(row.ca1)||0) + (Number(row.ca2)||0) + (Number(row.exam)||0);
+ const pos = termIdToPos[row.term_id];
+ if(pos && studentsMap[row.student_id]){ studentsMap[row.student_id][pos] += total; }
+});
+const finalStudents = Object.values(studentsMap);
+finalStudents.sort((a, b) => (b.first + b.second + b.third) - (a.first + a.second + a.third));
+const yearTotals = finalStudents.map(s => s.first + s.second + s.third);
+const classAverage = yearTotals.length ? yearTotals.reduce((a, b) => a + b, 0) / yearTotals.length : 0;
+let passCount = 0;
+body.innerHTML = "";
+if(yearTotals.reduce((a,b)=>a+b,0)===0){
+ body.innerHTML = `<tr><td colspan="8">No marks found. Results count: ${(allResults||[]).length}. Check session filter and term_id mapping.</td></tr>`;
+ return;
+}
+finalStudents.forEach((s, index) => {
+const yearTotal = s.first + s.second + s.third;
+const yearAvg = (yearTotal / 3).toFixed(2);
+const remark = Number(yearAvg) >= (classAverage/3) ? "PASS" : "FAIL";
+if (remark === "PASS") passCount++;
+body.innerHTML += `<tr>
+<td>${index + 1}</td>
+<td>${s.name}</td>
+<td>${s.first || 0}</td>
+<td>${s.second || 0}</td>
+<td>${s.third || 0}</td>
+<td><b>${yearTotal}</b></td>
+<td><b>${yearAvg}</b></td>
+<td class="${remark === "PASS"? "pass" : "fail"}">${remark}</td>
+</tr>`;
+});
+document.getElementById("totalStudents").textContent = finalStudents.length;
+document.getElementById("yearAverage").textContent = (classAverage/3).toFixed(2);
+document.getElementById("totalPass").textContent = passCount;
+document.getElementById("totalFail").textContent = finalStudents.length - passCount;
+} catch (err) {
+console.error(err);
+body.innerHTML = `<tr><td colspan="8">ERROR: ${err.message}</td></tr>`;
+}}
+</script>
+</body>
+</html>
