@@ -1,0 +1,22 @@
+{
+  "name": "Ummul Quran Academy",
+  "short_name": "Ummul",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#fbf7ec",
+  "theme_color": "#0b2a5b",
+  "icons": [
+    {
+      "src": "mine-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "mine-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
