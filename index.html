@@ -66,6 +66,16 @@
     .card{margin:0 auto;width:100%}
   }
 </style>
+  <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b2a5b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ummul">
+<link rel="apple-touch-icon" href="mine-logo.png">
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
 </head>
 <body>
 <div class="page">
